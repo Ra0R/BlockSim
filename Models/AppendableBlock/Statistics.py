@@ -9,13 +9,14 @@
 #######################################################################################
 
 
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
 from InputsConfig import InputsConfig as p
+from Models.AppendableBlock.Block import Block as block
 from Models.Consensus import Consensus as c
 from Models.Incentives import Incentives
-import pandas as pd
-from Models.AppendableBlock.Block import Block as block
-import numpy as np
-from datetime import datetime
 
 
 class Statistics:
