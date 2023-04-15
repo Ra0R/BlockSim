@@ -1,9 +1,10 @@
-from Models.Transaction import Transaction as BaseTransaction
-from Models.AppendableBlock.Network import Network
-from InputsConfig import InputsConfig as p
-import random
-import numpy as np
 import operator
+import random
+
+import numpy as np
+from InputsConfig import InputsConfig as InputsConfig
+from Models.AppendableBlock.Network import Network
+from Models.Transaction import Transaction as BaseTransaction
 
 #######################################################################################
 #
@@ -39,23 +40,23 @@ class FullTransaction():
 
     def create_transactions():
         # Generate Tn transaction from each device
-        for i in range(p.Tn):
+        for i in range(InputsConfig.Tn):
             # Each device generates a transaction per second to be sent to its gateway
-            for j in range(p.Gn * p.Dn):
+            for j in range(InputsConfig.Gn * InputsConfig.Dn):
                 tx = Transaction()
                 tx.id = random.randrange(100000000000)
                 creation_time = random.uniform(i, i + 1)
                 receive_time = creation_time
                 insert_time = receive_time
                 tx.timestamp = [creation_time, receive_time, insert_time]
-                nodeIndex = p.Gn + j
-                sender = p.NODES[nodeIndex]
+                nodeIndex = InputsConfig.Gn + j
+                sender = InputsConfig.NODES[nodeIndex]
                 tx.sender = sender.id
                 tx.to = sender.gatewayIds
                 FullTransaction.propagate_transaction(tx)
 
     # Propogate transaction to its gateway
     def propagate_transaction(tx):
-        index = p.GATEWAYIDS.index(tx.to)
+        index = InputsConfig.GATEWAYIDS.index(tx.to)
         tx.timestamp[1] = tx.timestamp[1] + Network.tx_prop_delay()
-        p.NODES[index].transactionsPool.append(tx)
+        InputsConfig.NODES[index].transactionsPool.append(tx)

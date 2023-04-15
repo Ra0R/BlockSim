@@ -18,21 +18,21 @@ class Node(BaseNode):
 
 
     def generate_gensis_block():
-        from InputsConfig import InputsConfig as p
-        for node in p.NODES:
+        from InputsConfig import InputsConfig as InputsConfig
+        for node in InputsConfig.NODES:
             node.blockchain.append(Block())
             
     # This to allow miners to include uncle blocks in their main blocks
     def add_uncles(miner):
-        from InputsConfig import InputsConfig as p
-        maxUncles = p.Buncles
+        from InputsConfig import InputsConfig as InputsConfig
+        maxUncles = InputsConfig.Buncles
         uncles=[]
 
         j=0
         while j < len (miner.unclechain):
             uncleDepth = miner.unclechain[j].depth
             blockDepth = miner.last_block().depth
-            if maxUncles>0 and uncleDepth > blockDepth - p.Ugenerations : # to check if uncle block is received and there is space to include it, also check within 6 generation
+            if maxUncles>0 and uncleDepth > blockDepth - InputsConfig.Ugenerations : # to check if uncle block is received and there is space to include it, also check within 6 generation
                 uncles.append(miner.unclechain[j])
                 del miner.unclechain[j] # delete uncle after inclusion
                 j-=1
@@ -44,8 +44,8 @@ class Node(BaseNode):
 
     ########################################################### reset the state of blockchains for all nodes in the network (before starting the next run) ###########################################################################################
     def resetState():
-        from InputsConfig import InputsConfig as p
-        for node in p.NODES:
+        from InputsConfig import InputsConfig as InputsConfig
+        for node in InputsConfig.NODES:
             node.blockchain= [] # create an array for each miner to store chain state locally
             node.transactionsPool= []
             node.unclechain = []

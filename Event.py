@@ -1,5 +1,7 @@
 import operator
-from InputsConfig import InputsConfig as p
+
+from InputsConfig import InputsConfig as InputsConfig
+
 
 class Event(object):
 

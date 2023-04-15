@@ -8,17 +8,18 @@
 #
 #######################################################################################
 
+import copy
+import random
+
 from Event import Event, Queue
-from Models.BlockCommit import BlockCommit as BaseBlockCommit
-from Scheduler import Scheduler
-from InputsConfig import InputsConfig as p
+from InputsConfig import InputsConfig as InputsConfig
+from Models.AppendableBlock.Network import Network
 from Models.AppendableBlock.Node import Node
 from Models.AppendableBlock.Statistics import Statistics
 from Models.AppendableBlock.Transaction import FullTransaction as FT
 from Models.AppendableBlock.Transaction import Transaction as Transaction
-from Models.AppendableBlock.Network import Network
-import random
-import copy
+from Models.BlockCommit import BlockCommit as BaseBlockCommit
+from Scheduler import Scheduler
 
 
 class BlockCommit(BaseBlockCommit):
@@ -35,8 +36,8 @@ class BlockCommit(BaseBlockCommit):
      # Generates and appends a block to specified gateway's chain
     def handle_create_block(event):
         Statistics.total_blocks += 1
-        index = p.GATEWAYIDS.index(event.block.receiverGatewayId)
-        node = p.NODES[index]
+        index = InputsConfig.GATEWAYIDS.index(event.block.receiverGatewayId)
+        node = InputsConfig.NODES[index]
         event.block.previous = node.last_block().id
         node.blockchain.append(event.block)
 
@@ -49,9 +50,9 @@ class BlockCommit(BaseBlockCommit):
 
     # Appends a transaction list to the speicfied gateway's block ledger
     def handle_append_tx_list(event):
-        index = p.GATEWAYIDS.index(event.node)
-        gateway_node = p.NODES[index]
-        tx_insertion_delay = random.expovariate(1/p.insertTxDelay)
+        index = InputsConfig.GATEWAYIDS.index(event.node)
+        gateway_node = InputsConfig.NODES[index]
+        tx_insertion_delay = random.expovariate(1/InputsConfig.insertTxDelay)
         tx_insertion_delay_increment = tx_insertion_delay
         tx_count = 1
         for tx in event.block.transactions:
@@ -59,18 +60,18 @@ class BlockCommit(BaseBlockCommit):
             t.timestamp[2] = event.block.timestamp + \
                 tx_insertion_delay_increment
             BlockCommit.append_tx(t,
-                                  gateway_node.blockchain[tx.sender + p.Gn].transactions)
+                                  gateway_node.blockchain[tx.sender + InputsConfig.Gn].transactions)
 
             tx_count += 1
             tx_insertion_delay_increment += tx_count * \
-                (tx_insertion_delay/p.txListSize)
+                (tx_insertion_delay/InputsConfig.txListSize)
 
     # Receives and appends a transaction list to the speicfied gateway's block ledger
     def handle_receive_tx_list(event):
-        index = p.GATEWAYIDS.index(event.node)
-        gateway_node = p.NODES[index]
+        index = InputsConfig.GATEWAYIDS.index(event.node)
+        gateway_node = InputsConfig.NODES[index]
         gateway_prop_delay = Network.tx_list_prop_delay()
-        tx_insertion_delay = random.expovariate(1/p.insertTxDelay)
+        tx_insertion_delay = random.expovariate(1/InputsConfig.insertTxDelay)
         tx_insertion_delay_increment = tx_insertion_delay
         tx_count = 1
         for tx in event.block.transactions:
@@ -79,11 +80,11 @@ class BlockCommit(BaseBlockCommit):
                 gateway_prop_delay + tx_insertion_delay_increment
 
             BlockCommit.append_tx(
-                t, gateway_node.blockchain[tx.sender + p.Gn].transactions)
+                t, gateway_node.blockchain[tx.sender + InputsConfig.Gn].transactions)
 
             tx_count += 1
             tx_insertion_delay_increment += tx_count * \
-                (tx_insertion_delay/p.txListSize)
+                (tx_insertion_delay/InputsConfig.txListSize)
 
     # Shedules a "receive transcation list" event for the specified gateways
     def schedule_event_prop_tx_list(tx_list, gatewayIds, tx_token_time):
@@ -94,14 +95,14 @@ class BlockCommit(BaseBlockCommit):
 
     # Generates and schedule the initial simulation events
     def generate_initial_events():
-        for gateway_id in p.GATEWAYIDS:
-            for node in p.NODES:
+        for gateway_id in InputsConfig.GATEWAYIDS:
+            for node in InputsConfig.NODES:
                 Scheduler.create_block_event_AB(node, 0, gateway_id)
 
     # Checks if all the transactions are processed
     def transcations_procesed():
         processed = True
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             if len(gateway_node.transactionsPool) > 0:
                 processed = False
                 break
@@ -125,7 +126,7 @@ class BlockCommit(BaseBlockCommit):
             tx_list_inserted = False
 
             # Randomly allocate transcation token to a gateway
-            gateway_node = random.choice(p.NODES[0:p.Gn])
+            gateway_node = random.choice(InputsConfig.NODES[0:InputsConfig.Gn])
 
             # Sort the transaction by receive time in ascending order
             gateway_node.transactionsPool.sort(key=lambda tx: tx.timestamp[1])
@@ -134,7 +135,7 @@ class BlockCommit(BaseBlockCommit):
 
             # Any transcations in the pool
             if tx_pool_size > 0:
-                tx_count = min(p.txListSize, tx_pool_size)
+                tx_count = min(InputsConfig.txListSize, tx_pool_size)
 
                 # Append any valid transaction to the transaction list
                 for tx in gateway_node.transactionsPool[0:tx_count]:
@@ -152,8 +153,8 @@ class BlockCommit(BaseBlockCommit):
                     for tx in tx_list:
                         gateway_node.transactionsPool.remove(tx)
 
-                    if p.maxTxListSize < len(tx_list):
-                        p.maxTxListSize = len(tx_list)
+                    if InputsConfig.maxTxListSize < len(tx_list):
+                        InputsConfig.maxTxListSize = len(tx_list)
                     tx_list_inserted = True
 
             # Release the transaction token

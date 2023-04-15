@@ -1,10 +1,12 @@
-import numpy as np
-from InputsConfig import InputsConfig as p
-from Models.Node import Node
 import random
 
+import numpy as np
+from InputsConfig import InputsConfig as InputsConfig
+from Models.Node import Node
+
+
 class Consensus:
-    global_chain=[] # the accpted global chain after resovling the forks
+    global_main_chain=[] # the accpted global chain after resovling the forks
 
 
     """

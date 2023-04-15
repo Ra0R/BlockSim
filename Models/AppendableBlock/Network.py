@@ -8,17 +8,18 @@
 #######################################################################################
 
 import random
-from InputsConfig import InputsConfig as p
+
+from InputsConfig import InputsConfig as InputsConfig
 
 
 class Network:
     # Delay for propagating transactions in the network
     def tx_prop_delay():
-        return random.expovariate(1/p.propTxDelay)
+        return random.expovariate(1/InputsConfig.propTxDelay)
 
     # Delay for propagating transactions in the network
     def tx_list_prop_delay():
-        return random.expovariate(1/p.propTxListDelay)
+        return random.expovariate(1/InputsConfig.propTxListDelay)
 
     # Delay for releasing the token
     def tx_token_release_delay():

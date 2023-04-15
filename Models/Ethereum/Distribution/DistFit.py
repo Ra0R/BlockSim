@@ -5,10 +5,10 @@ Created on Mon Aug 26 19:11:48 2019
 @author: b6068199
 """
 import numpy as np
-from sklearn.mixture import GaussianMixture
-from sklearn.ensemble import RandomForestRegressor
-from InputsConfig import InputsConfig as p
 import pandas as pd
+from InputsConfig import InputsConfig as InputsConfig
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.mixture import GaussianMixture
 
 """ A class to fit distribution to Ethereum transaction attributes, which are 
     Gas Limit, Used Gas, Gas Price as well as CPU Time

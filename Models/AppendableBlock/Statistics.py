@@ -13,9 +13,9 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from InputsConfig import InputsConfig as p
+from InputsConfig import InputsConfig as InputsConfig
 from Models.AppendableBlock.Block import Block as block
-from Models.Consensus import Consensus as c
+from Models.Consensus import Consensus as Consensus
 from Models.Incentives import Incentives
 
 
@@ -39,7 +39,7 @@ class Statistics:
 
     # Gathers information relating to the gateway chains
     def gateway_chains():
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             for b in gateway_node.blockchain:
                 info = [gateway_node.id, b.depth, b.id, b.previous,
                         b.timestamp, len(b.transactions)]
@@ -47,7 +47,7 @@ class Statistics:
 
     # Gathers transaction data from the gateway blockchains
     def gateway_transactions():
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             for b in gateway_node.blockchain:
                 for tx in b.transactions:
                     info = [gateway_node.id, tx.id, tx.sender, tx.to,
@@ -66,7 +66,7 @@ class Statistics:
             tx_count += 1
             if tx[6] > max_insertion_time:
                 max_insertion_time = tx[6]
-            if tx_count % p.Gn == 0:
+            if tx_count % InputsConfig.Gn == 0:
                 latency = max_insertion_time-tx[4]
                 info = [tx[1], latency]
                 Statistics.transaction_latencies.append(info)
@@ -95,18 +95,18 @@ class Statistics:
         Statistics.simulation_duration = latest_tx_insertion_time - earliest_tx_creation_time
 
         # Calculate transaction throughput (transactions per second)
-        number_of_tx = float(p.Dn * p.Gn * p.Tn)
+        number_of_tx = float(InputsConfig.Dn * InputsConfig.Gn * InputsConfig.Tn)
         Statistics.transaction_throughput = number_of_tx/Statistics.simulation_duration
 
     # Produce results report as an Excel worksheet
     def print_to_excel(simulationRunNumber, detail_report):
         # Create the worksheets
-        df1 = pd.DataFrame({'No. of Gateways': [p.Gn], 'Total No. of Devices': [
-            p.Gn * p.Dn], 'Total No. of Blocks': [Statistics.total_blocks], 'Blocks per Chain': [Statistics.total_blocks/p.Gn], 'Max TX List Size': [p.maxTxListSize], 'Total Transcations': [p.Gn*p.Dn*p.Tn], 'Average Transaction Latency': [Statistics.average_transaction_latency], 'Transaction Throughput': [
+        df1 = pd.DataFrame({'No. of Gateways': [InputsConfig.Gn], 'Total No. of Devices': [
+            InputsConfig.Gn * InputsConfig.Dn], 'Total No. of Blocks': [Statistics.total_blocks], 'Blocks per Chain': [Statistics.total_blocks/InputsConfig.Gn], 'Max TX List Size': [InputsConfig.maxTxListSize], 'Total Transcations': [InputsConfig.Gn*InputsConfig.Dn*InputsConfig.Tn], 'Average Transaction Latency': [Statistics.average_transaction_latency], 'Transaction Throughput': [
             Statistics.transaction_throughput], 'Simulation Duration (secs)': [Statistics.simulation_duration]})
 
-        df2 = pd.DataFrame({'No. of Gateways': [p.Gn], 'No. of Devices per Gateway': [
-            p.Dn], 'Total No. of Devices': [p.Gn*p.Dn], 'Total No. of Nodes': [p.Nn], 'Transactions per Device': [p.Tn]})
+        df2 = pd.DataFrame({'No. of Gateways': [InputsConfig.Gn], 'No. of Devices per Gateway': [
+            InputsConfig.Dn], 'Total No. of Devices': [InputsConfig.Gn*InputsConfig.Dn], 'Total No. of Nodes': [InputsConfig.Nn], 'Transactions per Device': [InputsConfig.Tn]})
 
         if detail_report:
             df3 = pd.DataFrame(Statistics.chains)
@@ -146,5 +146,5 @@ class Statistics:
         Statistics.simulation_duration = 0.0
 
         # Initialise gateway node variables
-        for node in p.NODES[0:p.Gn]:
+        for node in InputsConfig.NODES[0:InputsConfig.Gn]:
             node.reset_state()

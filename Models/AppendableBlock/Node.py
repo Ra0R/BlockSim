@@ -30,8 +30,8 @@ class Node(BaseNode):
 
     # Generates a genesis block and appends it to the local blockchain of all the gateway nodes
     def generate_gensis_block():
-        from InputsConfig import InputsConfig as p
-        for node in p.NODES[0:p.Gn]:
+        from InputsConfig import InputsConfig as InputsConfig
+        for node in InputsConfig.NODES[0:InputsConfig.Gn]:
             node.blockchain.append(Block())
 
     # Resets the node state

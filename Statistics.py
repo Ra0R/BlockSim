@@ -1,7 +1,7 @@
-from InputsConfig import InputsConfig as p
-from Models.Consensus import Consensus as c
-from Models.Incentives import Incentives
 import pandas as pd
+from InputsConfig import InputsConfig
+from Models.Consensus import Consensus
+from Models.Incentives import Incentives
 
 
 class Statistics:
@@ -16,27 +16,39 @@ class Statistics:
     staleRate=0
     blockData=[]
     blocksResults=[]
-    profits= [[0 for x in range(7)] for y in range(p.Runs * len(p.NODES))] # rows number of miners * number of runs, columns =7
+    profits= [[0 for x in range(7)] for y in range(InputsConfig.Runs * len(InputsConfig.NODES))] # rows number of miners * number of runs, columns =7
     index=0
     chain=[]
+    transactions=[]
 
     def calculate():
         Statistics.global_chain() # print the global chain
         Statistics.blocks_results() # calcuate and print block statistics e.g., # of accepted blocks and stale rate etc
         Statistics.profit_results() # calculate and distribute the revenue or reward for miners
+        Statistics.gateway_transactions() # gather transaction data from the gateway blockchains
+
+        # Gathers transaction data from the gateway blockchains
+    def gateway_transactions():
+        for node in InputsConfig.NODES:
+            # Get all blocks
+            for b in node.blockchain:
+                # Get all transactions
+                for tx in b.transactions:
+                    info = [node.id, tx.id, tx.sender, tx.to, tx.timestamp]
+                    Statistics.transactions += [info]
 
     ########################################################### Calculate block statistics Results ###########################################################################################
     def blocks_results():
         trans = 0
 
-        Statistics.mainBlocks= len(c.global_chain)-1
+        Statistics.mainBlocks= len(Consensus.global_main_chain)-1
         Statistics.staleBlocks = Statistics.totalBlocks - Statistics.mainBlocks
-        for b in c.global_chain:
-            if p.model==2: Statistics.uncleBlocks += len(b.uncles)
+        for b in Consensus.global_main_chain:
+            if InputsConfig.model==2: Statistics.uncleBlocks += len(b.uncles)
             else: Statistics.uncleBlocks = 0
             trans += len(b.transactions)
         Statistics.staleRate= round(Statistics.staleBlocks/Statistics.totalBlocks * 100, 2)
-        if p.model==2: Statistics.uncleRate= round(Statistics.uncleBlocks/Statistics.totalBlocks * 100, 2)
+        if InputsConfig.model==2: Statistics.uncleRate= round(Statistics.uncleBlocks/Statistics.totalBlocks * 100, 2)
         else: Statistics.uncleRate==0
         Statistics.blockData = [ Statistics.totalBlocks, Statistics.mainBlocks,  Statistics.uncleBlocks, Statistics.uncleRate, Statistics.staleBlocks, Statistics.staleRate, trans]
         Statistics.blocksResults+=[Statistics.blockData]
@@ -44,14 +56,14 @@ class Statistics:
     ########################################################### Calculate and distibute rewards among the miners ###########################################################################################
     def profit_results():
 
-        for m in p.NODES:
-            i = Statistics.index + m.id * p.Runs
+        for m in InputsConfig.NODES:
+            i = Statistics.index + m.id * InputsConfig.Runs
             Statistics.profits[i][0]= m.id
-            if p.model== 0: Statistics.profits[i][1]= "NA"
+            if InputsConfig.model== 0: Statistics.profits[i][1]= "NA"
             else: Statistics.profits[i][1]= m.hashPower
             Statistics.profits[i][2]= m.blocks
             Statistics.profits[i][3]= round(m.blocks/Statistics.mainBlocks * 100,2)
-            if p.model==2:
+            if InputsConfig.model==2:
                 Statistics.profits[i][4]= m.uncles
                 Statistics.profits[i][5]= round((m.blocks + m.uncles)/(Statistics.mainBlocks + Statistics.totalUncles) * 100,2)
             else: Statistics.profits[i][4]=0; Statistics.profits[i][5]=0
@@ -61,19 +73,19 @@ class Statistics:
 
     ########################################################### prepare the global chain  ###########################################################################################
     def global_chain():
-        if p.model==0 or p.model==1:
-                for i in c.global_chain:
+        if InputsConfig.model==0 or InputsConfig.model==1:
+                for i in Consensus.global_main_chain:
                         block= [i.depth, i.id, i.previous, i.timestamp, i.miner, len(i.transactions), i.size]
                         Statistics.chain +=[block]
-        elif p.model==2:
-                for i in c.global_chain:
+        elif InputsConfig.model==2:
+                for i in Consensus.global_main_chain:
                         block= [i.depth, i.id, i.previous, i.timestamp, i.miner, len(i.transactions), i.usedgas, len(i.uncles)]
                         Statistics.chain +=[block]
 
     ########################################################### Print simulation results to Excel ###########################################################################################
     def print_to_excel(fname):
 
-        df1 = pd.DataFrame({'Block Time': [p.Binterval], 'Block Propagation Delay': [p.Bdelay], 'No. Miners': [len(p.NODES)], 'Simulation Time': [p.simTime]})
+        df1 = pd.DataFrame({'Block Time': [InputsConfig.Binterval], 'Block Propagation Delay': [InputsConfig.Bdelay], 'No. Miners': [len(InputsConfig.NODES)], 'Simulation Time': [InputsConfig.simTime]})
         #data = {'Stale Rate': Results.staleRate,'Uncle Rate': Results.uncleRate ,'# Stale Blocks': Results.staleBlocks,'# Total Blocks': Results.totalBlocks, '# Included Blocks': Results.mainBlocks, '# Uncle Blocks': Results.uncleBlocks}
 
         df2= pd.DataFrame(Statistics.blocksResults)
@@ -84,15 +96,22 @@ class Statistics:
 
         df4 = pd.DataFrame(Statistics.chain)
         #df4.columns= ['Block Depth', 'Block ID', 'Previous Block', 'Block Timestamp', 'Miner ID', '# transactions','Block Size']
-        if p.model==2: df4.columns= ['Block Depth', 'Block ID', 'Previous Block', 'Block Timestamp', 'Miner ID', '# transactions','Block Limit', 'Uncle Blocks']
+        if InputsConfig.model==2: df4.columns= ['Block Depth', 'Block ID', 'Previous Block', 'Block Timestamp', 'Miner ID', '# transactions','Block Limit', 'Uncle Blocks']
         else: df4.columns= ['Block Depth', 'Block ID', 'Previous Block', 'Block Timestamp', 'Miner ID', '# transactions', 'Block Size']
+
+        # Save transaction data to an excel file
+
+        df5 = pd.DataFrame(Statistics.transactions)
+        df5.columns = ['Gateway Node ID', 'Tx ID', 'Sender Node ID',
+                           'Receiver Node ID', 'Tx Creation Time' ]#, 'Tx Reception Time', 'Tx Insertion Time']
 
         writer = pd.ExcelWriter(fname, engine='xlsxwriter')
         df1.to_excel(writer, sheet_name='InputConfig')
         df2.to_excel(writer, sheet_name='SimOutput')
         df3.to_excel(writer, sheet_name='Profit')
         df4.to_excel(writer,sheet_name='Chain')
-
+        df5.to_excel(writer, sheet_name='Transactions')
+        
         writer.save()
 
     ########################################################### Reset all global variables used to calculate the simulation results ###########################################################################################
@@ -108,6 +127,6 @@ class Statistics:
 
     def reset2():
         Statistics.blocksResults=[]
-        Statistics.profits= [[0 for x in range(7)] for y in range(p.Runs * len(p.NODES))] # rows number of miners * number of runs, columns =7
+        Statistics.profits= [[0 for x in range(7)] for y in range(InputsConfig.Runs * len(InputsConfig.NODES))] # rows number of miners * number of runs, columns =7
         Statistics.index=0
         Statistics.chain=[]

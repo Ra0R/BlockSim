@@ -1,10 +1,11 @@
-from Models.Ethereum.Distribution.DistFit import DistFit
-import random
-from InputsConfig import InputsConfig as p
-import numpy as np
-from Models.Network import Network
 import operator
+import random
+
+import numpy as np
+from InputsConfig import InputsConfig as InputsConfig
 from Models.Ethereum.Distribution.DistFit import DistFit
+from Models.Network import Network
+
 
 class Transaction(object):
 
@@ -55,7 +56,7 @@ class LightTransaction():
     def create_transactions():
 
         LightTransaction.pool=[]
-        Psize= int(p.Tn * p.Binterval)
+        Psize= int(InputsConfig.Tn * InputsConfig.Binterval)
 
         #if LightTransaction.x<1:
         DistFit.fit() # fit distributions
@@ -66,8 +67,8 @@ class LightTransaction():
             tx= Transaction()
 
             tx.id= random.randrange(100000000000)
-            tx.sender = random.choice (p.NODES).id
-            tx.to= random.choice (p.NODES).id
+            tx.sender = random.choice (InputsConfig.NODES).id
+            tx.to= random.choice (InputsConfig.NODES).id
             tx.gasLimit=gasLimit[i]
             tx.usedGas=usedGas[i]
             tx.gasPrice=gasPrice[i]/1000000000
@@ -84,7 +85,7 @@ class LightTransaction():
         transactions= [] # prepare a list of transactions to be included in the block
         limit = 0 # calculate the total block gaslimit
         count=0
-        blocklimit = p.Blimit
+        blocklimit = InputsConfig.Blimit
 
         pool = sorted(LightTransaction.pool, key=lambda x: x.gasPrice, reverse=True) # sort pending transactions in the pool based on the gasPrice value
 
@@ -101,7 +102,7 @@ class FullTransaction():
     x=0 # counter to only fit distributions once during the simulation
 
     def create_transactions():
-        Psize= int(p.Tn * p.Binterval)
+        Psize= int(InputsConfig.Tn * InputsConfig.Binterval)
 
         if FullTransaction.x<1:
             DistFit.fit() # fit distributions
@@ -112,12 +113,12 @@ class FullTransaction():
             tx= Transaction()
 
             tx.id= random.randrange(100000000000)
-            creation_time= random.randint(0,p.simTime-1)
+            creation_time= random.randint(0,InputsConfig.simTime-1)
             receive_time= creation_time
             tx.timestamp= [creation_time,receive_time]
-            sender= random.choice (p.NODES)
+            sender= random.choice (InputsConfig.NODES)
             tx.sender = sender.id
-            tx.to= random.choice (p.NODES).id
+            tx.to= random.choice (InputsConfig.NODES).id
             tx.gasLimit=gasLimit[i]
             tx.usedGas=usedGas[i]
             tx.gasPrice=gasPrice[i]/1000000000
@@ -129,7 +130,7 @@ class FullTransaction():
     # Transaction propogation & preparing pending lists for miners
     def transaction_prop(tx):
         # Fill each pending list. This is for transaction propogation
-        for i in p.NODES:
+        for i in InputsConfig.NODES:
             if tx.sender != i.id:
                 t= tx
                 t.timestamp[1] = t.timestamp[1] + Network.tx_prop_delay() # transaction propogation delay in seconds
@@ -141,7 +142,7 @@ class FullTransaction():
         transactions= [] # prepare a list of transactions to be included in the block
         limit = 0 # calculate the total block gaslimit
         count=0
-        blocklimit = p.Blimit
+        blocklimit = InputsConfig.Blimit
         miner.transactionsPool.sort(key=operator.attrgetter('gasPrice'), reverse=True)
         pool= miner.transactionsPool
 

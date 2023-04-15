@@ -8,12 +8,13 @@
 #
 #######################################################################################
 
-from InputsConfig import InputsConfig as p
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+from InputsConfig import InputsConfig as InputsConfig
 from Models.AppendableBlock.Block import Block as block
 from Models.AppendableBlock.Transaction import Transaction as Transaction
-import pandas as pd
-import numpy as np
-from datetime import datetime
 
 
 class Verification:
@@ -57,9 +58,9 @@ class Verification:
         check_passed = True
         check_info = []
         check_result = []
-        expected_nodes = p.Nn
+        expected_nodes = InputsConfig.Nn
         check_info = "%s nodes found" % (expected_nodes)
-        nodes_found = len(p.NODES)
+        nodes_found = len(InputsConfig.NODES)
 
         if nodes_found != expected_nodes:
             check_passed = False
@@ -76,11 +77,11 @@ class Verification:
         node_count = 0
 
         if node_type == "g":
-            for node in p.NODES[0:p.Gn]:
+            for node in InputsConfig.NODES[0:InputsConfig.Gn]:
                 if node.nodeType == node_type:
                     node_count += 1
         else:
-            for node in p.NODES[p.Gn:]:
+            for node in InputsConfig.NODES[InputsConfig.Gn:]:
                 if node.nodeType == node_type:
                     node_count += 1
 
@@ -91,7 +92,7 @@ class Verification:
         check_passed = True
         check_info = []
         check_result = []
-        expected_gateways = p.Gn
+        expected_gateways = InputsConfig.Gn
         check_info = "%s gateway nodes found" % (expected_gateways)
         gateways_found = Verification.get_number_of_nodes("g")
         if gateways_found != expected_gateways:
@@ -110,7 +111,7 @@ class Verification:
         check_info = []
         check_result = []
 
-        expected_devices = p.Gn * p.Dn
+        expected_devices = InputsConfig.Gn * InputsConfig.Dn
 
         check_info = "%s device nodes found" % (expected_devices)
         devices_found = Verification.get_number_of_nodes("d")
@@ -133,11 +134,11 @@ class Verification:
 
         # Check the blocks for each gateway
         # Expected blocks = Genesis block + gateway blocks + device blocks
-        expected_blocks_per_gateway = 1 + p.Gn + (p.Gn * p.Dn)
+        expected_blocks_per_gateway = 1 + InputsConfig.Gn + (InputsConfig.Gn * InputsConfig.Dn)
         check_info = "%s blocks found in all the gateway blockchains" % (
             expected_blocks_per_gateway)
 
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             if len(gateway_node.blockchain) != expected_blocks_per_gateway:
                 check_passed = False
                 check_info = "Expecting %s blocks and found %s in the blockchain of gateway %s" % (
@@ -157,7 +158,7 @@ class Verification:
         block_id_set = set()
 
         check_info = "Block ids are unique for all the gateway blockchains"
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             block_id_set.clear()
             for block in gateway_node.blockchain:
                 if block.id in block_id_set:
@@ -183,7 +184,7 @@ class Verification:
         check_result = []
         check_info = "One genesis block found in all the gateway blockchains"
 
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             block = gateway_node.blockchain[0]
             if block.id != 0 or block.previous != -1:
                 check_passed = False
@@ -202,15 +203,15 @@ class Verification:
         check_info = []
         check_result = []
         check_info = "%s gateway blocks found in all the gateway blockchains" % (
-            p.Gn)
+            InputsConfig.Gn)
 
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             block_count = 0
-            for b in gateway_node.blockchain[1:p.Gn]:
-                if b.nodeId != p.GATEWAYIDS[block_count]:
+            for b in gateway_node.blockchain[1:InputsConfig.Gn]:
+                if b.nodeId != InputsConfig.GATEWAYIDS[block_count]:
                     check_passed = False
                     check_info = "Gateway %s has no block for gateway %s in its blockchain" % (gateway_node,
-                                                                                               p.GATEWAYIDS[block_count])
+                                                                                               InputsConfig.GATEWAYIDS[block_count])
                     break
                 block_count += 1
 
@@ -227,13 +228,13 @@ class Verification:
         check_passed = True
         check_info = []
         check_result = []
-        expected_device_blocks_per_gateway = p.Gn * p.Dn
+        expected_device_blocks_per_gateway = InputsConfig.Gn * InputsConfig.Dn
         check_info = "%s device blocks found in all the gateway blockchains" % (
             expected_device_blocks_per_gateway)
 
-        for gateway_node in p.NODES[0:p.Gn]:
-            for device_node_id in range(1, p.Dn+1):
-                if gateway_node.blockchain[p.Gn + device_node_id].nodeId != device_node_id:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
+            for device_node_id in range(1, InputsConfig.Dn+1):
+                if gateway_node.blockchain[InputsConfig.Gn + device_node_id].nodeId != device_node_id:
                     check_passed = False
                     check_info = "Gateway %s has no block for device %s in its blockchain" % (
                         gateway_node.nodeId, device_node_id)
@@ -254,7 +255,7 @@ class Verification:
         check_result = []
         check_info = "Blocks in all the gateway blockchains are chained correctly"
 
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             previous_block_id = -1
             for block in gateway_node.blockchain:
                 if block.previous != previous_block_id:
@@ -279,11 +280,11 @@ class Verification:
         check_info = []
         check_result = []
 
-        expected_transactions_per_gateway = p.Dn * p.Gn * p.Tn
+        expected_transactions_per_gateway = InputsConfig.Dn * InputsConfig.Gn * InputsConfig.Tn
         check_info = "%s transaction found in all the gateway blockchains" % (
             expected_transactions_per_gateway)
 
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             total_transactions = 0
             for block in gateway_node.blockchain:
                 total_transactions += len(block.transactions)
@@ -309,7 +310,7 @@ class Verification:
         check_result = []
         check_info = "All gateway transaction pools processed"
 
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             tx_count = len(gateway_node.transactionsPool)
             if tx_count != 0:
                 check_passed = False
@@ -330,7 +331,7 @@ class Verification:
         tx_set = set()
 
         check_info = "Transactions ids in all the gateway blockchain are unique"
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             tx_set.clear()
             for block in gateway_node.blockchain:
                 for tx in block.transactions:
@@ -368,15 +369,15 @@ class Verification:
         first_gateway_tx_set = set()
         check_info = "All gateway blockchains have the same set of transactions"
         Verification.create_blockchain_tx_set(
-            first_gateway_tx_set, p.NODES[0].blockchain)
-        for gateway_node in p.NODES[1:p.Gn]:
+            first_gateway_tx_set, InputsConfig.NODES[0].blockchain)
+        for gateway_node in InputsConfig.NODES[1:InputsConfig.Gn]:
             gateway_tx_set = set()
             Verification.create_blockchain_tx_set(
                 gateway_tx_set, gateway_node.blockchain)
             if gateway_tx_set != first_gateway_tx_set:
                 check_passed = False
                 check_info = "The transactions in the blockchain of gateway %s are different from those in the blockchain of gateway %s" % (
-                    gateway_node.id, p.NODES[0].id)
+                    gateway_node.id, InputsConfig.NODES[0].id)
                 break
 
         check_result = ["Check Transcations Sets",
@@ -391,9 +392,9 @@ class Verification:
         check_result = []
         check_info = "Transactions from all devices are inserted into all the gateway blockchains correctly"
 
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             device_id = 0
-            for block in gateway_node.blockchain[1+p.Gn:]:
+            for block in gateway_node.blockchain[1+InputsConfig.Gn:]:
                 device_id += 1
                 for tx in block.transactions:
                     if tx.sender != device_id:
@@ -418,9 +419,9 @@ class Verification:
         check_result = []
         check_info = "Transactions in all block ledgers are chained correctly"
 
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             device_id = 0
-            for block in gateway_node.blockchain[1+p.Gn:]:
+            for block in gateway_node.blockchain[1+InputsConfig.Gn:]:
                 device_id += 1
                 previous_tx_id = -1
                 for tx in block.transactions:
@@ -455,7 +456,7 @@ class Verification:
         tx_count = 0
 
         # Gather all the transaction from all the gateways
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             for block in gateway_node.blockchain:
                 for tx in block.transactions:
                     tx_info.append([tx.id, tx.timestamp[0], tx.timestamp[2]])
@@ -468,7 +469,7 @@ class Verification:
             tx_count += 1
             if tx[2] > max_insertion_time:
                 max_insertion_time = tx[2]
-            if tx_count % p.Gn == 0:
+            if tx_count % InputsConfig.Gn == 0:
                 latencies.append(max_insertion_time-tx[1])
                 max_insertion_time = 0.0
 
@@ -495,10 +496,10 @@ class Verification:
         earliest_tx_creation_time = 9999999999.0
         latest_tx_insertion_time = 0.0
         ONE_PERCENT = 1
-        tx_submission_rate = p.Dn * p.Gn
+        tx_submission_rate = InputsConfig.Dn * InputsConfig.Gn
 
         # Collect all the transaction from al the gateway chains
-        for gateway_node in p.NODES[0:p.Gn]:
+        for gateway_node in InputsConfig.NODES[0:InputsConfig.Gn]:
             for block in gateway_node.blockchain:
                 for tx in block.transactions:
                     if tx.timestamp[0] < earliest_tx_creation_time:
@@ -506,7 +507,7 @@ class Verification:
                     if tx.timestamp[2] > latest_tx_insertion_time:
                         latest_tx_insertion_time = tx.timestamp[2]
         transaction_throughput = round(float(
-            p.Dn * p.Gn * p.Tn)/(latest_tx_insertion_time - earliest_tx_creation_time), 3)
+            InputsConfig.Dn * InputsConfig.Gn * InputsConfig.Tn)/(latest_tx_insertion_time - earliest_tx_creation_time), 3)
         percentage_increase = (
             abs(transaction_throughput - tx_submission_rate)/tx_submission_rate)*100
 
@@ -526,8 +527,8 @@ class Verification:
     # Produce verification report as an Excel worksheet
     def produce_verification_report():
         # Create the worksheets
-        df1 = pd.DataFrame({'No. of Gateways': [p.Gn], 'No. of Devices per Gateway': [
-            p.Dn], 'Total of No. of Nodes': [p.Nn], 'Transactions per Device': [p.Tn]})
+        df1 = pd.DataFrame({'No. of Gateways': [InputsConfig.Gn], 'No. of Devices per Gateway': [
+            InputsConfig.Dn], 'Total of No. of Nodes': [InputsConfig.Nn], 'Transactions per Device': [InputsConfig.Tn]})
 
         df2 = pd.DataFrame(Verification.verification_results)
         df2.columns = ['Verification Check', 'Status', 'Additional Info']

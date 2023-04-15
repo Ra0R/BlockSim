@@ -36,7 +36,7 @@ class InputsConfig:
         NODES = [Node(id=0), Node(id=1)]
 
         ''' Simulation Parameters '''
-        simTime = 1000  # the simulation length (in seconds)
+        simTime = 10000  # the simulation length (in seconds)
         Runs = 2  # Number of simulation runs
 
     ''' Input configurations for Bitcoin model '''
