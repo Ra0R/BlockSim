@@ -26,27 +26,27 @@ class Consensus(BaseConsensus):
         BaseConsensus.global_main_chain = [] # reset the global chain before filling it
 
         a=[]
-        for i in InputsConfig.NODES:
-            a+=[i.blockchain_length()]
-        x = max(a)
+        for node in InputsConfig.NODES:
+            a+=[node.blockchain_length()]
+        longest_recorded_chain = max(a)
 
-        b=[]
-        z=0
-        for i in InputsConfig.NODES:
-            if i.blockchain_length() == x:
-                b+=[i.id]
-                z=i.id
+        nodes_with_longest_chain=[]
+        last_node_id_with_longest_chain=0
+        for node in InputsConfig.NODES:
+            if node.blockchain_length() == longest_recorded_chain:
+                nodes_with_longest_chain+=[node.id]
+                last_node_id_with_longest_chain=node.id
 
-        if len(b) > 1:
+        if len(nodes_with_longest_chain) > 1:
             c=[]
-            for i in InputsConfig.NODES:
-                if i.blockchain_length() == x:
-                    c+=[i.last_block().miner]
-            z = np.bincount(c)
-            z= np.argmax(z)
+            for node in InputsConfig.NODES:
+                if node.blockchain_length() == longest_recorded_chain:
+                    c+=[node.last_block().miner]
+            last_node_id_with_longest_chain = np.bincount(c)
+            last_node_id_with_longest_chain = np.argmax(last_node_id_with_longest_chain)
 
-        for i in InputsConfig.NODES:
-            if i.blockchain_length() == x and i.last_block().miner == z:
-                for bc in range(len(i.blockchain)):
-                    BaseConsensus.global_main_chain.append(i.blockchain[bc])
+        for node in InputsConfig.NODES:
+            if node.blockchain_length() == longest_recorded_chain and node.last_block().miner == last_node_id_with_longest_chain:
+                for bc in range(len(node.blockchain)):
+                    BaseConsensus.global_main_chain.append(node.blockchain[bc])
                 break
