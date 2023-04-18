@@ -1,7 +1,11 @@
 from Event import Event, Queue
 from InputsConfig import InputsConfig as InputsConfig
+from ResultWriter import ResultWriter
 from Scheduler import Scheduler
 from Statistics import Statistics
+
+
+def profile(f): return f
 
 if InputsConfig.model == 3:
     from Models.AppendableBlock.BlockCommit import BlockCommit
@@ -38,8 +42,9 @@ elif InputsConfig.model == 0:
 
 ########################################################## Start Simulation ##############################################################
 
-
+@profile
 def main():
+    event_log = []
     for i in range(InputsConfig.Runs):
         clock = 0  # set clock to 0 at the start of the simulation
         if InputsConfig.hasTrans:
@@ -56,6 +61,7 @@ def main():
             next_event = Queue.get_next_event()
             clock = next_event.time  # move clock to the time of the event
             BlockCommit.handle_event(next_event)
+            event_log.append(next_event)
             Queue.remove_event(next_event)
 
         # for the AppendableBlock process transactions and
@@ -72,23 +78,29 @@ def main():
         # calculate the simulation results (e.g., block statstics and miners' rewards)
         Statistics.calculate()
 
-        if InputsConfig.model == 3:
-            Statistics.print_to_excel(i, True)
-            Statistics.reset()
-        else:
-            ########## reset all global variable before the next run #############
-            Statistics.reset()  # reset all variables used to calculate the results
-            Node.resetState()  # reset all the states (blockchains) for all nodes in the network
-            fname = "(Allverify)1day_{0}M_{1}K.xlsx".format(
-                InputsConfig.Bsize/1000000, InputsConfig.Tn/1000)
-            # print all the simulation results in an excel file
-            Statistics.print_to_excel(fname)
-        fname = "(Allverify)1day_{0}M_{1}K.xlsx".format(
-                InputsConfig.Bsize/1000000, InputsConfig.Tn/1000)
-        # print all the simulation results in an excel file
-        Statistics.print_to_excel(fname)
-        Statistics.reset2()  # reset profit results
+        # if InputsConfig.model == 3:
+        #     Statistics.print_to_excel(i, True)
+        #     Statistics.reset()
+        # else:
+        #     ########## reset all global variable before the next run #############
+        #     Statistics.reset()  # reset all variables used to calculate the results
+        #     Node.resetState()  # reset all the states (blockchains) for all nodes in the network
+        #     fname = "(Allverify)1day_{0}M_{1}K.xlsx".format(
+        #         InputsConfig.Bsize/1000000, InputsConfig.Tn/1000)
+        #     # print all the simulation results in an excel file
+        #     Statistics.print_to_excel(fname)
+        # fname = "(Allverify)1day_{0}M_{1}K.xlsx".format(
+        #         InputsConfig.Bsize/1000000, InputsConfig.Tn/1000)
+        # # print all the simulation results in an excel file
+        # Statistics.print_to_excel(fname)
+        # Statistics.reset2()  # reset profit results
 
+        # Node.reset_state()
+        Statistics.reset()
+        
+        ResultWriter.writeResult()
+        ResultWriter.writeEvents(event_log, with_transactions=False)
+        
 
 ######################################################## Run Main method #####################################################################
 if __name__ == '__main__':
