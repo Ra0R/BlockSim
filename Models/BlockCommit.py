@@ -46,11 +46,15 @@ class BlockCommit:
             i+=1
 
     # Update local blockchain, if necessary, upon receiving a new valid block. This method is only triggered if Full technique is used
-    def update_transactionsPool(node,block):
-        j=0
-        while j < len(block.transactions):
-            for t in node.transactionsPool:
-                if  block.transactions[j].id == t.id:
-                    del t
-                    break
-            j+=1
+    def update_transactionsPool(node, block):
+        block_dict = {t.id: t for t in block.transactions}
+        node.transactionsPool = [t for t in node.transactionsPool if t.id not in block_dict]
+        
+        # This is suuuuuuper slow O(n^2)
+        # j=0
+        # while j < len(block.transactions):
+        #     for t in node.transactionsPool:
+        #         if  block.transactions[j].id == t.id:
+        #             del t
+        #             break
+        #     j+=1

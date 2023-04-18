@@ -7,6 +7,9 @@ from InputsConfig import InputsConfig as InputsConfig
 from Models.Network import Network
 
 
+def profile(f): return f
+
+
 class Transaction(object):
 
     """ Defines the Ethereum Block model.
@@ -112,27 +115,48 @@ class FullTransaction():
     # Transaction propogation & preparing pending lists for miners
     def transaction_prop(tx):
         # Fill each pending list. This is for transaction propogation
-        for i in InputsConfig.NODES:
-            if tx.sender != i.id:
+        for node in InputsConfig.NODES:
+            if tx.sender != node.id:
                 t= copy.deepcopy(tx)
                 t.timestamp[1] = t.timestamp[1] + Network.tx_prop_delay() # transaction propogation delay in seconds
-                i.transactionsPool.append(t)
+                node.transactionsPool.append(t)
 
 
-
+    @profile
     def execute_transactions(miner,currentTime):
         transactions= [] # prepare a list of transactions to be included in the block
         size = 0 # calculate the total block gaslimit
-        count=0
         blocksize = InputsConfig.Bsize
-        miner.transactionsPool.sort(key=operator.attrgetter('fee'), reverse=True)
-        pool= miner.transactionsPool
 
-        while count < len(pool):
-                if  (blocksize >= pool[count].size and pool[count].timestamp[1] <= currentTime):
-                    blocksize -= pool[count].size
-                    transactions += [pool[count]]
-                    size += pool[count].size
-                count+=1
+        filtered_minerpool = [tx for tx in miner.transactionsPool if tx.timestamp[1] <= currentTime]
+        pool = sorted(filtered_minerpool, key=lambda x: x.fee, reverse=True) # sort pending transactions in the pool based on the gasPrice value
+
+        # pool : list of transactions in the pool of the miner
+        # tx1 = { id: 1, timestamp: [0,0], sender: 1, to: 2, value: 100, size: 0.000546, fee: 3}
+        # tx2 = { id: 2, timestamp: [0,0], sender: 1, to: 3, value: 100, size: 0.000546, fee: 2}
+        # tx3 = { id: 3, timestamp: [0,0], sender: 1, to: 4, value: 100, size: 0.000546, fee: 1}
+        # pool = [tx1, tx2, tx3]
+        
+        # I think this will always iterate through the entire pool
+        # while count < len(pool):
+        #         if  (blocksize >= pool[count].size and pool[count].timestamp[1] <= currentTime):
+        #             blocksize -= pool[count].size
+        #             transactions += [pool[count]]
+        #             size += pool[count].size
+        #         count+=1
+
+        # Show length of transactions that are not eligible
+        # print("Transactions not eligible: ")
+        # print(len(pool) - len([tx for tx in pool if tx.timestamp[1] <= currentTime]))
+        
+
+        for tx in pool:
+            if blocksize <= 0:
+                break
+
+            if  (blocksize >= tx.size):
+                blocksize -= tx.size
+                transactions.append(tx)
+                size += tx.size
 
         return transactions, size
