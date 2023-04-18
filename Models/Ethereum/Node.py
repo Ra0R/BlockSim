@@ -23,18 +23,18 @@ class Node(BaseNode):
             node.blockchain.append(Block())
             
     # This to allow miners to include uncle blocks in their main blocks
-    def add_uncles(miner):
+    def add_uncles(miner_node):
         from InputsConfig import InputsConfig as InputsConfig
         maxUncles = InputsConfig.Buncles
         uncles=[]
 
         j=0
-        while j < len (miner.unclechain):
-            uncleDepth = miner.unclechain[j].depth
-            blockDepth = miner.last_block().depth
+        while j < len (miner_node.unclechain):
+            uncleDepth = miner_node.unclechain[j].depth
+            blockDepth = miner_node.last_block().depth
             if maxUncles>0 and uncleDepth > blockDepth - InputsConfig.Ugenerations : # to check if uncle block is received and there is space to include it, also check within 6 generation
-                uncles.append(miner.unclechain[j])
-                del miner.unclechain[j] # delete uncle after inclusion
+                uncles.append(miner_node.unclechain[j])
+                del miner_node.unclechain[j] # delete uncle after inclusion
                 j-=1
                 maxUncles-=1 # decrease allowable uncles by 1
             j+=1
