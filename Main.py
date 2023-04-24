@@ -3,6 +3,7 @@ from InputsConfig import InputsConfig as InputsConfig
 from ResultWriter import ResultWriter
 from Scheduler import Scheduler
 from Statistics import Statistics
+from ThesisStats import ThesisStats
 
 
 def profile(f): return f
@@ -56,13 +57,17 @@ def main():
         Node.generate_gensis_block()  # generate the gensis block for all miners
         # initiate initial events >= 1 to start with
         BlockCommit.generate_initial_events()
-
         while not Queue.isEmpty() and clock <= InputsConfig.simTime:
             next_event = Queue.get_next_event()
             clock = next_event.time  # move clock to the time of the event
             BlockCommit.handle_event(next_event)
             event_log.append(next_event)
             Queue.remove_event(next_event)
+            # plt = ThesisStats().plot_mempool_similarity_matrix(ThesisStats().mempool_similarity_matrix(ResultWriter.get_mempools()))
+
+        plt = ThesisStats().plot_mempool_similarity_matrix(
+            ThesisStats().mempool_similarity_matrix(ResultWriter.get_mempools()))
+        plt.show()
 
         # for the AppendableBlock process transactions and
         # optionally verify the model implementation

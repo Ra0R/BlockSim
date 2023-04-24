@@ -42,7 +42,7 @@ class InputsConfig:
     ''' Input configurations for Bitcoin model '''
     if model == 1:
         ''' Block Parameters '''
-        Binterval = 10  # Average time (in seconds)for creating a block in the blockchain
+        Binterval = 600  # Average time (in seconds)for creating a block in the blockchain
         Bsize = 1.0  # The block size in MB
         Bdelay = 0.42  # average block propogation delay in seconds, #Ref: https://bitslog.wordpress.com/2016/04/28/uncle-mining-an-ethereum-consensus-protocol-flaw/
         Breward = 12.5  # Reward for mining a block
