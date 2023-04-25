@@ -53,6 +53,10 @@ class FullTransaction():
                 sender = InputsConfig.NODES[nodeIndex]
                 tx.sender = sender.id
                 tx.to = sender.gatewayIds
+
+                # TODO Here we can add some heterogeneity in the transaction dispersion
+                # For instance we can introduce a topology where some devices are more
+                # closely connected than others
                 FullTransaction.propagate_transaction(tx)
 
     # Propogate transaction to its gateway
