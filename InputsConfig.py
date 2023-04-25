@@ -7,8 +7,9 @@ class InputsConfig:
     2 : Ethereum model
         3 : AppendableBlock model
     """
-    model = 1
-
+    model = 4
+    plot_similarity = False
+    
     ''' Input configurations for the base model '''
     if model == 0:
 
@@ -40,7 +41,8 @@ class InputsConfig:
         Runs = 1  # Number of simulation runs
 
     ''' Input configurations for Bitcoin model '''
-    if model == 1:
+    ''' Input configurations for the BlockDAG model'''
+    if model == 1 or model == 4:
         ''' Block Parameters '''
         Binterval = 600  # Average time (in seconds)for creating a block in the blockchain
         Bsize = 1.0  # The block size in MB
@@ -59,8 +61,10 @@ class InputsConfig:
         ''' Node Parameters '''
         Nn = 3  # the total number of nodes in the network
         NODES = []
-
-        from Models.Bitcoin.Node import Node
+        if model == 1:
+            from Models.Bitcoin.Node import Node
+        else:
+            from Models.BlockDAG.Node import Node
 
         # NODES = [Node(id=i, hashPower=100) for i in range(0, 1000)]
         # here as an example we define three nodes by assigning a unique id for each one + % of hash (computing) power
@@ -84,7 +88,7 @@ class InputsConfig:
         ''' Simulation Parameters '''
         simTime = 1000  # the simulation length (in seconds)
         Runs = 1  # Number of simulation runs
-
+        
     ''' Input configurations for Ethereum model '''
     if model == 2:
 

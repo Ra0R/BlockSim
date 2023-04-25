@@ -95,7 +95,7 @@ class FullTransaction():
     def create_transactions():
         Psize = int(InputsConfig.Tn * InputsConfig.simTime)
 
-        for i in range(Psize):
+        for _ in range(Psize):
             # assign values for transactions' attributes. You can ignore some attributes if not of an interest, and the default values will then be used
             tx = Transaction()
 

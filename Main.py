@@ -41,6 +41,13 @@ elif InputsConfig.model == 0:
     from Models.Transaction import FullTransaction as FT
     from Models.Transaction import LightTransaction as LT
 
+elif InputsConfig.model == 4:
+    from Models.BlockDAG.BlockCommit import BlockCommit
+    from Models.BlockDAG.Consensus import Consensus
+    from Models.BlockDAG.Node import Node
+    from Models.Transaction import FullTransaction as FT
+    
+
 ########################################################## Start Simulation ##############################################################
 
 @profile
@@ -65,9 +72,10 @@ def main():
             Queue.remove_event(next_event)
             # plt = ThesisStats().plot_mempool_similarity_matrix(ThesisStats().mempool_similarity_matrix(ResultWriter.get_mempools()))
 
-        plt = ThesisStats().plot_mempool_similarity_matrix(
-            ThesisStats().mempool_similarity_matrix(ResultWriter.get_mempools()))
-        plt.show()
+        if InputsConfig.plot_similarity:
+            plt = ThesisStats().plot_mempool_similarity_matrix(
+                ThesisStats().mempool_similarity_matrix(ResultWriter.get_mempools()))
+            plt.show()
 
         # for the AppendableBlock process transactions and
         # optionally verify the model implementation
@@ -79,9 +87,12 @@ def main():
 
         Consensus.fork_resolution()  # apply the longest chain to resolve the forks
         # distribute the rewards between the particiapting nodes
-        Incentives.distribute_rewards()
+        if not InputsConfig.model == 4:
+            Incentives.distribute_rewards()
+        
         # calculate the simulation results (e.g., block statstics and miners' rewards)
-        Statistics.calculate()
+        if not InputsConfig.model == 4:
+            Statistics.calculate()
 
         # if InputsConfig.model == 3:
         #     Statistics.print_to_excel(i, True)
