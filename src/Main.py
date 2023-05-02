@@ -42,6 +42,7 @@ elif InputsConfig.model == 0:
     from Models.Transaction import LightTransaction as LT
 
 elif InputsConfig.model == 4:
+    from Models.BlockCommit import BlockCommit
     from Models.BlockDAG.BlockCommit import BlockCommit
     from Models.BlockDAG.Consensus import Consensus
     from Models.BlockDAG.Node import Node
@@ -70,6 +71,7 @@ def main():
             BlockCommit.handle_event(next_event)
             event_log.append(next_event)
             Queue.remove_event(next_event)
+            # InputsConfig.NODES[0].blockDAG.plot()
             # plt = ThesisStats().plot_mempool_similarity_matrix(ThesisStats().mempool_similarity_matrix(ResultWriter.get_mempools()))
 
         if InputsConfig.plot_similarity:
@@ -93,6 +95,10 @@ def main():
         # calculate the simulation results (e.g., block statstics and miners' rewards)
         if not InputsConfig.model == 4:
             Statistics.calculate()
+
+        if InputsConfig.model == 4:
+            for node in InputsConfig.NODES[0:3]:
+                node.blockDAG.plot()
 
         # if InputsConfig.model == 3:
         #     Statistics.print_to_excel(i, True)
