@@ -1,20 +1,26 @@
-from Models.BlockDAG.BlockDAG import BlockDAG
+from Models.BlockDAG.BlockDAGraph import BlockDAGraph
 from Models.Node import Node as BaseNode
 
 
 class Node(BaseNode):
+
     def __init__(self, id, hashPower):
         '''Initialize a new miner named name with hashrate measured in hashes per second.'''
         super().__init__(id)  # ,blockchain,transactionsPool,blocks,balance)
         self.hashPower = hashPower
         # self.blockchain = []  # create an array for each miner to store chain state locally
         
-        self.blockDAG : BlockDAG = BlockDAG()
+        self.blockDAG : BlockDAGraph = BlockDAGraph()
         self.transactionsPool = []
         self.blocks = 0  # total number of blocks mined in the main chain
         self.balance = 0  # to count all reward that a miner made, including block rewards + uncle rewards + transactions fees
         self.forkedBlocks = []
         self.isLeader = False
+
+    def __str__(self):
+      return "-> Node " + str(self.id) + "\n" \
+      + "  -> BlockDAG: " + str(self.blockDAG) + "\n" \
+      + "  -> Forked Blocks: " + str(self.forkedBlocks) + "\n"
 
 
     """
@@ -58,3 +64,10 @@ class Node(BaseNode):
             else:
                 block.num_invalid_txs += 1
         return block
+
+    """
+    Get the last? block or the deepest block, not sure yet   
+    ->  
+    """
+    def last_block(self):
+        return self.blockDAG.get_last_block()

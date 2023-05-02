@@ -38,17 +38,18 @@ class BlockCommit:
                     #node.unclechain.append(node.blockchain[i]) # move block to unclechain
                     newBlock = miner.blockchain[i]
                     node.blockchain[i]= newBlock
-                    if InputsConfig.hasTrans and InputsConfig.Ttechnique == "Full": BlockCommit.update_transactionsPool(node,newBlock)
+                    BlockCommit.update_transactionsPool(node,newBlock)
             else:
                 newBlock = miner.blockchain[i]
                 node.blockchain.append(newBlock)
-                if InputsConfig.hasTrans and InputsConfig.Ttechnique == "Full": BlockCommit.update_transactionsPool(node,newBlock)
+                BlockCommit.update_transactionsPool(node,newBlock)
             i+=1
 
     # Update local blockchain, if necessary, upon receiving a new valid block. This method is only triggered if Full technique is used
     def update_transactionsPool(node, block):
-        block_dict = {t.id: t for t in block.transactions}
-        node.transactionsPool = [t for t in node.transactionsPool if t.id not in block_dict]
+        if InputsConfig.hasTrans and InputsConfig.Ttechnique == "Full":
+            block_dict = {t.id: t for t in block.transactions}
+            node.transactionsPool = [t for t in node.transactionsPool if t.id not in block_dict]
         
         # This is suuuuuuper slow O(n^2)
         # j=0
