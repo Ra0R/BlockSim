@@ -3,12 +3,13 @@ import random
 from Event import Event, Queue
 from InputsConfig import InputsConfig
 from Models.BlockDAG.Block import Block
+from Models.BlockDAG.Node import Node
 
 
 class BlockDAGScheduler:
 
     # Schedule a block creation event for a miner and add it to the event list
-    def create_block_event(miner, eventTime):
+    def create_block_event(miner : Node, eventTime):
         eventType = "create_block"
         if eventTime <= InputsConfig.simTime:
             # prepare attributes for the event
@@ -19,12 +20,19 @@ class BlockDAGScheduler:
             block.previous = miner.last_block()
             block.timestamp = eventTime
 
+
             # Extend forked blocks
-            if(len(miner.forkedBlocks) > 0):
+            if(len(miner.forkedBlockCandidates) > 0):
                 block.references = []
-                for forkedBlock in miner.forkedBlocks:
-                    if not miner.blockDAG.block_exists(forkedBlock.id):
+                included_blocks = []
+                for forkedBlock in miner.forkedBlockCandidates:
+                    if not miner.blockDAG.is_in_chain_of_block(block.previous, forkedBlock.id):
                         block.references.append(forkedBlock.id)
+                        included_blocks.append(forkedBlock)
+
+                # Remove included blocks from forked blocks
+                for included_block in included_blocks:
+                    miner.forkedBlockCandidates.remove(included_block)
 
             event = Event(eventType, block.miner, eventTime,
                           block)  # create the event

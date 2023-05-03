@@ -48,3 +48,10 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
     def test_get_last_block(self):
         blockDAG = self.get_test_graph()
         self.assertEqual(blockDAG.get_last_block(), 4)
+
+
+    def test_fork_candidates(self):
+        blockDAG = self.get_test_graph()
+        candidate_ids = blockDAG.find_fork_candidates_id(2)
+        self.assertTrue(3 in candidate_ids)
+        self.assertTrue(2 in candidate_ids)

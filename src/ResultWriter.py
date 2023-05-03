@@ -142,7 +142,7 @@ class ResultWriter:
         forked_blocks : list[RecordedBlock] = []
         for node in InputsConfig.NODES:
             forked_blocks_by_node = [ResultWriter.block_to_recorded_block(
-                block) for block in node.forkedBlocks]
+                block) for block in node.forkedBlockCandidates]
             if(len(forked_blocks_by_node) > 0):
                 forked_blocks = forked_blocks  + forked_blocks_by_node
         return forked_blocks

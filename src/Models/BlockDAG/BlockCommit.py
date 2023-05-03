@@ -23,8 +23,6 @@ class BlockCommit(BaseBlockCommit):
             BlockCommit.generate_block(event)
         elif event.type == "receive_block":
             BlockCommit.receive_block(event)
-        elif event.type == "extend_block":
-            BlockCommit.extend_block(event)
 
     # Block Creation Event
     def generate_block(event):
@@ -44,20 +42,18 @@ class BlockCommit(BaseBlockCommit):
 
                 event.block.transactions = blockTrans
                 event.block.usedgas = blockSize
-            if len(miner.forkedBlocks) > 0:
-                BlockCommit.acknowledge_blocks(miner, eventTime, miner.forkedBlocks, event.block)            
 
-
-            miner.blockDAG.add_block(event.block.id, event.block.previous, [], event.block)
+            # Add immediately to local node's blockDAG
+            miner.blockDAG.add_block(event.block.id, event.block.previous, event.block.references, event.block)
             
             BlockCommit.propagate_block(event.block)
             # Start mining or working on the next block
             BlockCommit.generate_next_block(miner, eventTime)
 
     def acknowledge_blocks(miner : Node, eventTime, forkedBlocks, block):
-        forkedBlocks = miner.forkedBlocks
+        forkedBlocks = miner.forkedBlockCandidates
         
-        miner.forkedBlocks = []
+        miner.forkedBlockCandidates = []
 
         references = [block.previous for block in forkedBlocks]
         miner.blockDAG.add_block(block.id, block.previous, references, block)
@@ -88,7 +84,8 @@ class BlockCommit(BaseBlockCommit):
 
             # remove block from forkedBlocks blockchain if it is there
             # TODO: Also remove from mempool
-            for included_block_id in references:
+            included_blocks = references + [event.block.id]
+            for included_block_id in included_blocks:
                 BlockCommit.remove_included_block_from_forks(node, included_block_id)
 
             # Start mining or working on the next block
@@ -106,21 +103,31 @@ class BlockCommit(BaseBlockCommit):
                 # Start mining or working on the next block
                 BlockCommit.generate_next_block(node, currentTime)
 
-            # Block arrives at the same depth as the current block    
+            # Block arrives at the same depth as the current block
+            # TODO: Probably replace by checking blocks on the same level, which could be fork candidates    
             elif (depth == node.blockDAG.get_depth()):                
                 # 1) it is a forked block
-                node.forkedBlocks.append(event.block)
+                # node.forkedBlocks.append(event.block)
 
                 # 2) the current head will be forked
-                node.forkedBlocks.append(node.blockDAG.get_blockData_by_hash(node.last_block()))
+                # node.forkedBlocks.append(node.blockDAG.get_blockData_by_hash(node.last_block()))
+
+                candidates = node.blockDAG.find_fork_candidates_id(depth)
+
+                blocks = [node.blockDAG.get_blockData_by_hash(id) for id in candidates]
+                blocks += [event.block]
+
+                node.forkedBlockCandidates += blocks
 
                 BlockCommit.update_transactionsPool(node, event.block)
-
-                print(node)
             else: #TODO: I think: It is a forked block and we are already passed that
-                print("What is happening here?")
-                # # if the block is not built on top of the last block, it is a forked block
-                node.forkedBlocks.append(event.block)
+                candidates = node.blockDAG.find_fork_candidates_id(depth)
+
+                blocks = [node.blockDAG.get_blockData_by_hash(id) for id in candidates]
+                blocks += [event.block]
+                
+                node.forkedBlockCandidates += blocks
+
 
                 # # TODO: Should this be done in block generation instead?
                 BlockCommit.update_transactionsPool(node, event.block)
@@ -182,8 +189,7 @@ class BlockCommit(BaseBlockCommit):
             # BlockDAGGraph.get_depth_of_block(block_id)
 
             # Order missing blocks by depth, otherwise we might try to add a block that references a block that hasn't been added yet
-            missing_blocks = sorted(missing_blocks, key=lambda block: max(
-                node.blockDAG.get_depth_of_block(block), miner.blockDAG.get_depth_of_block(block)))
+            missing_blocks = sorted(missing_blocks, key=lambda block: max(node.blockDAG.get_depth_of_block(block), miner.blockDAG.get_depth_of_block(block)))
             
             for block_id in missing_blocks:
                 # remove transactions from the mempool pool that are included in the new block
@@ -199,9 +205,9 @@ class BlockCommit(BaseBlockCommit):
 
     # TODO: Move to node class
     def remove_included_block_from_forks(node, block_id):
-        for block in node.forkedBlocks:
+        for block in node.forkedBlockCandidates:
             if block.id == block_id:
-                node.forkedBlocks.remove(block)
+                node.forkedBlockCandidates.remove(block)
                 break
 
     def exclude_referenced_blocks_from_forkedBlocks_and_mempool(node, references):

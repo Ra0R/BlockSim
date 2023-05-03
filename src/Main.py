@@ -99,6 +99,7 @@ def main():
         if InputsConfig.model == 4:
             for node in InputsConfig.NODES[0:3]:
                 node.blockDAG.plot()
+                input("Press Enter to continue...")
 
         # if InputsConfig.model == 3:
         #     Statistics.print_to_excel(i, True)

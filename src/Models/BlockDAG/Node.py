@@ -14,13 +14,13 @@ class Node(BaseNode):
         self.transactionsPool = []
         self.blocks = 0  # total number of blocks mined in the main chain
         self.balance = 0  # to count all reward that a miner made, including block rewards + uncle rewards + transactions fees
-        self.forkedBlocks = []
+        self.forkedBlockCandidates = [] # Contains blocks that are candidates to be forked, i.e. blocks that will not be in the main chain
         self.isLeader = False
 
     def __str__(self):
       return "-> Node " + str(self.id) + "\n" \
-      + "  -> BlockDAG: " + str(self.blockDAG) + "\n" \
-      + "  -> Forked Blocks: " + str(self.forkedBlocks) + "\n"
+      + " -> MainChain:" + str(self.blockDAG.get_main_chain()) + "\n"  + "  -> Forked Blocks: " + str([block.id for block in self.forkedBlockCandidates]) + "\n"
+    #   + "  -> BlockDAG: " + str(self.blockDAG) + "\n" \
 
 
     """

@@ -7,7 +7,7 @@ class BlockDAGraph:
     def add_block(self, block_hash, parent, references=[], block=None):
         """
         Add a block to the DAG
-        References is a list of abandoned blocks that this block references)
+        References is a list of abandoned blocks that this block references
         Previous is the block that this block is built on 
         """
         #[ {0: {parent: [], references: []}}, {1: {parent: [0], references: []}} ]
@@ -23,7 +23,42 @@ class BlockDAGraph:
 
         # Update depth
         self.depth = max(self.depth, depth)
+
+    def update_block(self, block_hash, references=[]):
+        """
+        Update a block in the DAG
+        References is a list of abandoned blocks that this block references
+
+        This method is used when a miner creates a block and wants to update the references
+        TODO: Since blocks are not propagated to the miner itself
+        """
+        # Update the references
+        self.graph[block_hash]["references"] = set(references)
+
+    def find_fork_candidates_id(self, depth):
+        """
+        Find a block on the same depth as the given block
+        """
+        candidates = []
+        for id, data in self.graph.items():
+            if data["_depth"] == depth:
+                candidates.append(id)
+        
+        return candidates
     
+
+    def get_main_chain(self):
+        """
+        Get the main chain of the DAG
+        """
+        main_chain = []
+        block_hash = self.last_block
+        while block_hash != -1:
+            main_chain.append(block_hash)
+            block_hash = self.graph[block_hash]["parent"]
+        main_chain.reverse()
+        return main_chain
+
     def __str__(self):
         return "[" + ", ".join([str(block_hash) for block_hash in self.graph.keys()]) + "]"
 
@@ -35,8 +70,7 @@ class BlockDAGraph:
     
     def plot(self):
         import graphviz as gv
-        print("Graph")
-        print(self.graph)
+
         graph = gv.Digraph(format='png')
         # Graph previous as full edges and references as dashed edges
         for block_number, data in self.graph.items():
@@ -78,6 +112,19 @@ class BlockDAGraph:
             return self.graph[block_hash]["_depth"]
         else:
             return -1
+        
+    def is_in_chain_of_block(self, block_hash, block_hash2):
+        """ 
+        Check if block2 is in the chain of block1
+        """
+        if block_hash == block_hash2:
+            return True
+
+        if block_hash == -1:
+            return False
+
+        return self.is_in_chain_of_block(self.graph[block_hash]["parent"], block_hash2)
+
 
 class BlockDAGraphComparison:
     def get_differing_blocks(smallerGraph : BlockDAGraph, biggerGraph : BlockDAGraph):
