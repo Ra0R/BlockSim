@@ -19,22 +19,24 @@ class Node(BaseNode):
 
     def __str__(self):
       return "-> Node " + str(self.id) + "\n" \
-      + " -> MainChain:" + str(self.blockDAG.get_main_chain()) + "\n"  + "  -> Forked Blocks: " + str([block.id for block in self.forkedBlockCandidates]) + "\n"
-    #   + "  -> BlockDAG: " + str(self.blockDAG) + "\n" \
+      + " -> MainChain:" + str(self.blockDAG.get_main_chain()) + "\n" \
+      + "  -> Forked Blocks: " + str([block.id for block in self.forkedBlockCandidates]) + "\n"
 
 
     """
     VT(tx) = True if tx is valid, False otherwise
     This method is used to verify if a transaction can extend the current blockchain
     Validity:
-    - Correct signature
-    - Correct inputs
-    - Correct outputs
-    - Correct fee
-    - Transaction is not a double-spend
+    - IGNORE - Correct signature
+    - IGNORE - Correct inputs
+    - IGNORE - Correct outputs
+    - IGNORE - Correct fee
+    - IGNORE? - Transaction is not a double-spend    
     - Transaction is not executed twice
+    
     """
-    def validate_transaction(self, transaction, blockchain):
+    def validate_transaction(self, transaction):
+
         return True
 
     """
@@ -45,7 +47,11 @@ class Node(BaseNode):
     - Valid transactions (VB(B) = True => VT(T) = True for all T in B)
     - Atleast one valid transaction 
     """
-    def validate_block(self, block, blockchain):
+    def validate_block(self, block):
+        for tx in block.transactions:
+            if not self.validate_transaction(tx, self.blockDAG):
+                return False
+            
         return True
 
     """
@@ -54,7 +60,7 @@ class Node(BaseNode):
     """
     def fill_block(self, block, transactions):
         for tx in transactions:
-            if self.validate_transaction(tx, block.blockchain):
+            if self.validate_transaction(tx, self.blockDAG):
                 block.transactions.append(tx)
                 block.size += tx.size
                 block.fee += tx.fee
