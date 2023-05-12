@@ -17,6 +17,15 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
         blockDAG.add_block(3, 1, [])
         blockDAG.add_block(4, 2, [3])
 
+        # Ascii Graph:
+        #  0
+        #  |
+        #  1
+        # / \
+        # 2 3
+        # \ :
+        #   4
+
         return blockDAG
 
     def test_create_graph(self):
@@ -55,3 +64,19 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
         candidate_ids = blockDAG.find_fork_candidates_id(2)
         self.assertTrue(3 in candidate_ids)
         self.assertTrue(2 in candidate_ids)
+
+    def test_get_descendants(self):
+        blockDAG = self.get_test_graph()
+        descendants = blockDAG.get_descendants(1)
+        self.assertTrue(4 in descendants)
+        self.assertTrue(3 in descendants)
+        self.assertTrue(2 in descendants)
+
+    def test_get_ancestors(self):
+        BlockDAG = self.get_test_graph()
+
+        descendants = BlockDAG.get_descendants(1)
+        self.assertTrue(4 in descendants)
+        self.assertTrue(3 in descendants)
+        self.assertTrue(2 in descendants)
+        print(descendants)
