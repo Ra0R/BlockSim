@@ -1,15 +1,20 @@
 
+from Models.BlockDAG.Node import Node
+
+
 class InputsConfig:
     RESULTS_PATH = "Results/"
     """ Seclect the model to be simulated.
     0 : The base model
     1 : Bitcoin model
     2 : Ethereum model
-        3 : AppendableBlock model
+    3 : AppendableBlock model
+    4 : BlockDAG model
     """
+
     model = 4
-    plot_similarity = False
-    
+    plot_similarity = True
+    plot_chain = True
     ''' Input configurations for the base model '''
     if model == 0:
 
@@ -44,17 +49,19 @@ class InputsConfig:
     ''' Input configurations for the BlockDAG model'''
     if model == 1 or model == 4:
         ''' Block Parameters '''
-        Binterval = 600  # Average time (in seconds)for creating a block in the blockchain
+        Binterval = 30  # Average time (in seconds)for creating a block in the blockchain
         Bsize = 1.0  # The block size in MB
-        Bdelay = 0.42  # average block propogation delay in seconds, #Ref: https://bitslog.wordpress.com/2016/04/28/uncle-mining-an-ethereum-consensus-protocol-flaw/
+        Bdelay = 5.1 # average block propogation delay in seconds #https://bitcoin.stackexchange.com/questions/10821/how-long-does-it-take-to-propagate-a-newly-created-block-to-the-entire-bitcoin-n
+        # 5.1 #Ref: https://bitslog.wordpress.com/2016/04/28/uncle-mining-an-ethereum-consensus-protocol-flaw/
         Breward = 12.5  # Reward for mining a block
 
         ''' Transaction Parameters '''
         hasTrans = True  # True/False to enable/disable transactions in the simulator
         Ttechnique = "Full"  # Full/Light to specify the way of modelling transactions
-        Tn = 10  # The rate of the number of transactions to be created per second
+        Tn = 60  # The rate of the number of transactions to be created per second
+
         # The average transaction propagation delay in seconds (Only if Full technique is used)
-        Tdelay = 5.1
+        Tdelay = 15.1
         Tfee = 0.000062  # The average transaction fee
         Tsize = 0.000546  # The average transaction size  in MB
 
@@ -66,7 +73,7 @@ class InputsConfig:
         else:
             from Models.BlockDAG.Node import Node
 
-        # NODES = [Node(id=i, hashPower=100) for i in range(0, 1000)]
+        # NODES = [Node(id=i, hashPower=100) for i in range(0, 100)]
         # here as an example we define three nodes by assigning a unique id for each one + % of hash (computing) power
         NODES = [
             Node(id=0, hashPower=50), 
@@ -86,7 +93,7 @@ class InputsConfig:
 
 
         ''' Simulation Parameters '''
-        simTime = 1000  # the simulation length (in seconds)
+        simTime = 4000  # the simulation length (in seconds)
         Runs = 1  # Number of simulation runs
         
     ''' Input configurations for Ethereum model '''
