@@ -47,7 +47,7 @@ class BlockDAGraph:
         return candidates
     
 
-    def get_main_chain(self):
+    def get_main_chain(self) -> list:
         """
         Get the main chain of the DAG
         """
@@ -78,7 +78,7 @@ class BlockDAGraph:
             references = data["references"]
 
             # Add the block
-            graph.node(str(block_number), str(block_number), shape="box", fontname="Helvetica")
+            graph.node(str(block_number), str(block_number) + "\n |T|:" + str(len(data["block_data"].transactions)), shape="box", fontname="Helvetica")
 
             if parent == -1:
                 # Skip plotting
@@ -103,6 +103,23 @@ class BlockDAGraph:
             return None
         
         return self.graph[block_hash]["block_data"]
+    
+    def get_descendants(self, block_hash):
+        """ 
+        Get all descendants of a block
+        """
+        descendants = set()
+
+        # Add the block itself
+        descendants.add(block_hash)
+
+        # Add all descendants of the children
+        for child_hash, data in self.graph.items():
+            if data["parent"] == block_hash:
+                descendants = descendants.union(self.get_descendants(child_hash))
+        
+        return descendants
+
 
     def block_exists(self, block_hash):
         return block_hash in self.graph
@@ -125,6 +142,33 @@ class BlockDAGraph:
 
         return self.is_in_chain_of_block(self.graph[block_hash]["parent"], block_hash2)
 
+    def to_list(self):
+        """
+        Convert the graph to a list of block hashes
+        """
+
+        return list(self.graph.keys())
+    
+    def get_reachable_blocks(self):
+        """
+        Get all blocks that are reachable from the last block
+        through either references or parent
+        """
+        reachable_blocks = set()
+
+        # Add the last block
+        reachable_blocks.add(self.last_block)
+
+        # Add all blocks that are referenced
+        for _, data in self.graph.items():
+            for reference in data["references"]:
+                reachable_blocks.add(reference)
+        
+        # Add all blocks that are parents
+        for _, data in self.graph.items():
+            reachable_blocks.add(data["parent"])
+        
+        return reachable_blocks
 
 class BlockDAGraphComparison:
     def get_differing_blocks(smallerGraph : BlockDAGraph, biggerGraph : BlockDAGraph):

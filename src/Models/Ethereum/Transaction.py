@@ -115,7 +115,7 @@ class FullTransaction():
             tx.id= random.randrange(100000000000)
             creation_time= random.randint(0,InputsConfig.simTime-1)
             receive_time= creation_time
-            tx.timestamp= [creation_time,receive_time]
+            tx.timestamp= [creation_time, receive_time]
             sender= random.choice (InputsConfig.NODES)
             tx.sender = sender.id
             tx.to= random.choice (InputsConfig.NODES).id

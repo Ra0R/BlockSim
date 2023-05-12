@@ -59,3 +59,23 @@ class ThesisStats:
         # plt.pause(0.01)
 
         return plt
+    
+    def calculate_fork_rate(self, list_of_all_block_hashes, main_chain_block_hashes):
+        return (len(list_of_all_block_hashes) - len(main_chain_block_hashes)) / len(list_of_all_block_hashes) 
+    
+    # BlockChain:
+    # Time-to-inclusion is the time a forked transaction is included in the main chain
+    # BlockDAG:
+    # Time-to-inclusion is the time a forked transaction is included in the main chain,
+    # in this case through a reference
+    def calculate_transaction_time_to_inclusion(self, forked_block_hashes, main_chain_block_hashes):
+        # Inclusion horizon:
+        inclusion_horizon = 10 # 10 Blocks
+
+        # calculate the transactions time to inclusion
+        
+
+
+    
+
+    
