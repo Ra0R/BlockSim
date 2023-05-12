@@ -8,17 +8,13 @@ from Models.Transaction import Transaction
 from RecordedBlock import MempoolOfNode, RecordedBlock, RecordedTransaction
 
 WITH_TRANSACTION = False
+ONLY_TRANSACTION_IDS = True
 
 class ResultWriter:
     ############
     # TODO: Add the following to the result file:
     # - A file per node with the following information:
     #   - The node's mempool
-    # TODO - Some kind of mempool comparison between nodes
-
-    # TODO - A file with the nodes mempool before block creation
-    
-    # TODO (?) - A file with the nodes mempool after block creation
     #   - The node's chain
     #
     # - A file with the following information:
@@ -26,7 +22,6 @@ class ResultWriter:
     #
     # - A file with all the transactions
     ############
-
 
     def writeResult():
 
@@ -56,6 +51,7 @@ class ResultWriter:
 
     @staticmethod
     def write_blocks(blocks : list[RecordedBlock], with_transactions=False):
+
         if not with_transactions:
             blocks = ResultWriter.remove_transactions_from_blocks(blocks)
             
@@ -71,7 +67,10 @@ class ResultWriter:
     @staticmethod
     def remove_transactions_from_blocks(blocks : list[RecordedBlock]) -> list[RecordedBlock]:
         for block in blocks:
-            block.transactions = []
+            if ONLY_TRANSACTION_IDS:
+                block.transactions = [transaction.hash for transaction in block.transactions]
+            else:
+                block.transactions = []
 
         return blocks
 
@@ -103,16 +102,32 @@ class ResultWriter:
     def block_to_recorded_block(block) -> RecordedBlock:
         if block == []:
             return None
-        return RecordedBlock(
-            block_hash = block.id,
-            block_parent_hash = block.previous,
-            block_number = block.depth,
-            block_timestamp = block.timestamp,
-            block_miner = block.miner,
-            block_transaction_count = len(block.transactions),
-            block_size = block.size,
-            transactions = [ResultWriter.transaction_to_recorded_transaction(transaction) for transaction in block.transactions]
-        )
+        if InputsConfig.model == 1:
+            return RecordedBlock(
+                block_hash = block.id,
+                block_parent_hash = block.previous,
+                block_number = block.depth,
+                block_timestamp = block.timestamp,
+                block_miner = block.miner,
+                block_transaction_count = len(block.transactions),
+                block_size = block.size,
+                transactions = [ResultWriter.transaction_to_recorded_transaction(transaction) for transaction in block.transactions]
+            )
+        if InputsConfig.model == 4:
+            for node in InputsConfig.NODES:
+                if not node.blockDAG.get_blockData_by_hash(block) == None:
+                    block = InputsConfig.NODES[0].blockDAG.get_blockData_by_hash(block)
+            
+            return RecordedBlock(
+                block_hash = block.id,
+                block_parent_hash = block.previous,
+                block_number = block.depth,
+                block_timestamp = block.timestamp,
+                block_miner = block.miner,
+                block_transaction_count = len(block.transactions),
+                block_size = block.size,
+                transactions = [ResultWriter.transaction_to_recorded_transaction(transaction) for transaction in block.transactions]
+            )
 
     def get_mempools() -> list[MempoolOfNode]:
         mempools : list[MempoolOfNode] = []
@@ -126,9 +141,13 @@ class ResultWriter:
 
     def get_main_chain() -> list[RecordedBlock]:
         main_chain : list[RecordedBlock] = []
-        for block in Consensus.global_main_chain:
-                    main_chain.append(ResultWriter.block_to_recorded_block(block))
-
+        if InputsConfig.model == 1:
+            for block in Consensus.global_main_chain:
+                main_chain.append(ResultWriter.block_to_recorded_block(block))
+        if InputsConfig.model == 4:
+            node = InputsConfig.NODES[0]
+            main_chain = [ResultWriter.block_to_recorded_block(block) for block in node.blockDAG.get_main_chain()]
+        
         return main_chain    
 
     def get_all_blocks() -> list[RecordedBlock]:
@@ -141,8 +160,23 @@ class ResultWriter:
     def get_forked_blocks() -> list[RecordedBlock]:
         forked_blocks : list[RecordedBlock] = []
         for node in InputsConfig.NODES:
-            forked_blocks_by_node = [ResultWriter.block_to_recorded_block(
-                block) for block in node.forkedBlockCandidates]
+            forked_blocks_by_node = []
+
+
+            if InputsConfig.model == 4:
+                list_of_all_block_hashes = node.blockDAG.to_list()
+                main_chain = node.blockDAG.get_main_chain()
+                forked_block_ids = [block for block in list_of_all_block_hashes if block not in main_chain]
+                f_blocks = [node.blockDAG.get_blockData_by_hash(block) for block in forked_block_ids]
+                forked_blocks_by_node = [ResultWriter.block_to_recorded_block(block) for block in f_blocks]
+                
+            if InputsConfig.model == 1:
+                forked_blocks_by_node = [ResultWriter.block_to_recorded_block(
+                    block) for block in node.forkedBlocks if block.depth > 0]
+                
             if(len(forked_blocks_by_node) > 0):
                 forked_blocks = forked_blocks  + forked_blocks_by_node
+
+            # Remove duplicate blocks by hash
+            forked_blocks = list({block.block_hash: block for block in forked_blocks}.values())
         return forked_blocks
