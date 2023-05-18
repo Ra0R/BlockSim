@@ -78,14 +78,18 @@ class BlockDAGraph:
             references = data["references"]
 
             # Add the block
-            graph.node(str(block_number), str(block_number) + "\n |T|:" + str(len(data["block_data"].transactions)), shape="box", fontname="Helvetica")
+            graph.node(str(block_number), str(block_number) 
+                    #    + "\n |T|:" + str(len(data["block_data"].transactions))
+                       ,
+                        shape="box", fontname="Helvetica")
 
             if parent == -1:
                 # Skip plotting
-                continue
-
-            # Add the parent
-            graph.edge(str(block_number), str(parent), style="solid")
+                graph.edge(str(block_number), str(parent), style="solid")
+                graph.node(str("-1"), "Genesis", shape="box", fontname="Helvetica")
+            else:
+                # Add the parent
+                graph.edge(str(block_number), str(parent), style="solid")
 
             # Add the references
             for reference in references:
@@ -94,6 +98,75 @@ class BlockDAGraph:
         # Genesis is at top
         graph.attr(rankdir='BT')
         graph.render('blockchain.gv', view=True)
+
+    def plot_with_inclusion_rate_per_block(self, inclusion_rate_per_block):
+        """
+        This graph plots the blockchain with the transaction inclusion matrix
+        -> Red connections refer to transaction which are included in same height
+        -> Blue connections refer to transactions which are included at different heights
+        """
+        import graphviz as gv
+
+        graph = gv.Digraph(format='png')
+        # Graph previous as full edges and references as dashed edges
+        for block_number, data in self.graph.items():
+            parent = data["parent"]
+            references = data["references"]
+
+            # Add the block
+            graph.node(str(block_number), str(block_number) + "\n |T|:" +
+                       str(len(data["block_data"].transactions)), shape="box", fontname="Helvetica")
+
+            if parent == -1:
+                # Skip plotting
+                graph.edge(str(block_number), str(parent), style="solid")
+                graph.node(str("-1"), "Genesis", shape="box", fontname="Helvetica")
+            else:
+                # Add the parent
+                graph.edge(str(block_number), str(parent), style="solid")
+
+            # Add the references
+            for reference in references:
+                graph.edge(str(block_number), str(reference), style="dashed")
+
+        for i in range(len(inclusion_rate_per_block["fork_id"])):
+            fork_id = inclusion_rate_per_block["fork_id"][i]
+            block_id = inclusion_rate_per_block["block_id"][i]
+            inclusion_rate = inclusion_rate_per_block["inclusion_rate"][i]
+            inclusion_time = inclusion_rate_per_block["inclusion_time"][i]
+
+            if fork_id == -1:
+                continue
+
+            # Depending on inclusion time draw a red or blue edge
+            # Depending on inclusion rate draw a thicker edge
+            tail_name = str(fork_id)
+            head_name = str(block_id)
+            penwidth = str(inclusion_rate * 5)
+            arrowhead = "none"
+            if inclusion_time == 0:
+                color = "green"
+            else:
+                color = "blue"
+
+            if inclusion_time < 0:
+                color = "red"
+
+            graph.edge(str(fork_id), str(block_id), color=color, penwidth=str(inclusion_rate * 5), arrowhead="none")
+
+        # Genesis is at top
+        graph.attr(rankdir='BT')
+        graph.render('blockdag_inclusion.gv', view=True)
+
+    def get_all_transaction_ids(self):
+        """
+        Get all transactions in the DAG
+        """
+        transactions = set()
+        for _, data in self.graph.items():
+            transactions = transactions.union([tx.id for tx in data["block_data"].transactions])
+        
+        return transactions
 
     def get_blockData_by_hash(self, block_hash):
         if block_hash == -1:
@@ -169,6 +242,44 @@ class BlockDAGraph:
             reachable_blocks.add(data["parent"])
         
         return reachable_blocks
+
+    def get_topological_orderings(self):
+        """
+        Depth first search to get all topological orderings
+        Parent references are treated preferentially
+        """
+        N = len(self.graph)
+        Visited = {block_hash: False for block_hash in self.graph.keys()}
+        Visited[-1] = True # Genesis block is always visited
+        
+        ordering = [None] * N
+        i = N - 1  # Index for ordering
+
+        for(block_hash, _) in self.graph.items():
+            if not Visited[block_hash]:
+                i, ordering = self.topological_sort(block_hash, Visited, ordering, i)
+
+        return ordering
+    
+    def topological_sort(self, block_hash, Visited, ordering, i):
+        """
+        Topological sort helper function
+        """
+        Visited[block_hash] = True
+
+        # Recur for all the vertices adjacent to this vertex
+        for parent in [self.graph[block_hash]["parent"]]:
+            if not Visited[parent]:
+                i, ordering = self.topological_sort(parent, Visited, ordering, i)
+
+        for reference in self.graph[block_hash]["references"]:
+            if not Visited[reference]:
+                i, ordering = self.topological_sort(reference, Visited, ordering, i)
+
+        ordering[i] = block_hash
+
+        return i - 1, ordering
+
 
 class BlockDAGraphComparison:
     def get_differing_blocks(smallerGraph : BlockDAGraph, biggerGraph : BlockDAGraph):
