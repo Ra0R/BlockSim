@@ -114,6 +114,7 @@ class FullTransaction():
 
     # Transaction propogation & preparing pending lists for miners
     def transaction_prop(tx):
+        
         # Fill each pending list. This is for transaction propogation
         for node in InputsConfig.NODES:
             if tx.sender != node.id:
@@ -128,8 +129,8 @@ class FullTransaction():
         size = 0  # calculate the total block gaslimit
         blocksize = InputsConfig.Bsize
 
-        filtered_minerpool = [
-            tx for tx in miner.transactionsPool if tx.timestamp[1] <= currentTime]
+        filtered_minerpool = [tx for tx in miner.transactionsPool if tx.timestamp[1] <= currentTime]
+        
         # sort pending transactions in the pool based on the gasPrice value
         pool = sorted(filtered_minerpool, key=lambda x: x.fee, reverse=True)
 
@@ -160,4 +161,12 @@ class FullTransaction():
                 transactions.append(tx)
                 size += tx.size
 
+        if InputsConfig.model == 1:
+            # TODO
+            True
+
+        if InputsConfig.model == 4 and InputsConfig.tx_consistency == True:
+            # Filter all transactions that are in the blockDAG already
+            transactions = [tx for tx in transactions if tx.id not in miner.blockDAG.get_all_transaction_ids()]
+        
         return transactions, size
