@@ -37,8 +37,7 @@ class BlockCommit(BaseBlockCommit):
                 if InputsConfig.Ttechnique == "Light":
                     blockTrans, blockSize = LT.execute_transactions()
                 elif InputsConfig.Ttechnique == "Full":
-                    blockTrans, blockSize = FT.execute_transactions(
-                        miner, eventTime)
+                    blockTrans, blockSize = FT.execute_transactions(miner, eventTime)
 
                 event.block.transactions = blockTrans
                 event.block.usedgas = blockSize
@@ -46,20 +45,17 @@ class BlockCommit(BaseBlockCommit):
             # Add immediately to local node's blockDAG
             miner.blockDAG.add_block(event.block.id, event.block.previous, event.block.references, event.block)
             
+            # Block may become forked
+            miner.forkedBlockCandidates += [event.block]
+
+            # Remove transactions from mempool
+            BlockCommit.update_transactionsPool(miner, event.block, eventTime)
+            # Remove references from mempool 
+            BlockCommit.exclude_referenced_blocks_from_forkedBlocks_and_mempool(miner, event.block.references, eventTime)
+
             BlockCommit.propagate_block(event.block)
             # Start mining or working on the next block
             BlockCommit.generate_next_block(miner, eventTime)
-
-    def acknowledge_blocks(miner : Node, eventTime, forkedBlocks, block):
-        forkedBlocks = miner.forkedBlockCandidates
-        
-        miner.forkedBlockCandidates = []
-
-        references = [block.previous for block in forkedBlocks]
-        miner.blockDAG.add_block(block.id, block.previous, references, block)
-            
-        BlockCommit.propagate_block(block)
-        BlockCommit.generate_next_block(miner, eventTime)
         
     # Block Receiving Event
     def receive_block(event):
@@ -72,6 +68,11 @@ class BlockCommit(BaseBlockCommit):
         node: Node = InputsConfig.NODES[event.node]  # recipint
         lastBlockId = node.last_block()  # the id of last block
 
+        if InputsConfig.print_progress:
+            print("Node " + str(node.id) + " received block " + str(event.block.id) + " from node " + str(minerId) + " at time " + str(currentTime) + " with previous block " + str(blockPrev) + " and last block " + str(lastBlockId) 
+            + " with references " + str(event.block.references))
+            print(str(node))
+            
         # > case 1: the received block is built on top of the last block according to the recipient's blockchain ####
         if blockPrev == lastBlockId:
             # append the block to local blockchain
@@ -80,65 +81,61 @@ class BlockCommit(BaseBlockCommit):
             references = [] if not hasattr(event.block, 'references') else event.block.references
             node.blockDAG.add_block(event.block.id, event.block.previous, references, event.block)
 
-            BlockCommit.update_transactionsPool(node, event.block)
+            BlockCommit.update_transactionsPool(node, event.block, currentTime)
 
             # remove block from forkedBlocks blockchain if it is there
             # TODO: Also remove from mempool
             included_blocks = references + [event.block.id]
-            for included_block_id in included_blocks:
-                BlockCommit.remove_included_block_from_forks(node, included_block_id)
-
+            # for included_block_id in included_blocks:
+            #    BlockCommit.remove_included_block_from_forks(node, included_block_id)
             # Start mining or working on the next block
+
+            BlockCommit.exclude_referenced_blocks_from_forkedBlocks_and_mempool(node, included_blocks, currentTime)
+
+
             BlockCommit.generate_next_block(node, currentTime)
+
+            # Add block to fork candidates if it is not already there
+            
+            # node.forkedBlockCandidates += [event.block]
 
          # > case 2: the received block is  not built on top of the last block --> either we need to sync the state of the chain to that block
          # or it is a forked block if we are already passed that
         else:
             
-            depth = event.block.depth + 1 # Why +1?
+            depth = event.block.depth + 1
 
             # We are behind, sync the state
             if (depth > node.blockDAG.get_depth()):
-                BlockCommit.update_local_blockchain(node, miner, depth)
+                BlockCommit.update_local_blockchain(node, miner, depth, currentTime)
                 # Start mining or working on the next block
                 BlockCommit.generate_next_block(node, currentTime)
 
+                node.forkedBlockCandidates += [event.block]
+
             # Block arrives at the same depth as the current block
-            # TODO: Probably replace by checking blocks on the same level, which could be fork candidates    
-            elif (depth == node.blockDAG.get_depth()):                
-                # 1) it is a forked block
-                # node.forkedBlocks.append(event.block)
-
-                # 2) the current head will be forked
-                # node.forkedBlocks.append(node.blockDAG.get_blockData_by_hash(node.last_block()))
-
+            # TODO: Probably replace by checking blocks on the same level, which could be fork candidates
+            elif (depth == node.blockDAG.get_depth()):
+                # Received block or current head may be forked
                 candidates = node.blockDAG.find_fork_candidates_id(depth)
 
-                blocks = [node.blockDAG.get_blockData_by_hash(id) for id in candidates]
-                blocks += [event.block]
+                # TODO: Should this be done in block generation instead?
+                BlockCommit.update_transactionsPool(node, event.block, currentTime)
 
-                node.forkedBlockCandidates += blocks
+        candidates = node.blockDAG.find_fork_candidates_id(event.block.depth + 1)
+        blocks = [node.blockDAG.get_blockData_by_hash(id) for id in candidates]
+        blocks += [event.block]
+        node.forkedBlockCandidates += blocks
 
-                BlockCommit.update_transactionsPool(node, event.block)
-            else: #TODO: I think: It is a forked block and we are already passed that
-                candidates = node.blockDAG.find_fork_candidates_id(depth)
-
-                blocks = [node.blockDAG.get_blockData_by_hash(id) for id in candidates]
-                blocks += [event.block]
-                
-                node.forkedBlockCandidates += blocks
-
-
-                # # TODO: Should this be done in block generation instead?
-                BlockCommit.update_transactionsPool(node, event.block)
+        # HACK: Remove duplicates from forkedBlockCandidates
+        node.forkedBlockCandidates = list(set(node.forkedBlockCandidates))
                 
     # Upon generating or receiving a block, the miner start working on the next block as in POW
-    def generate_next_block(node, currentTime):
+    def generate_next_block(node : Node, currentTime):
         if node.hashPower > 0:
             # time when miner x generate the next block
             blockTime = currentTime + c.Protocol(node)
             BlockDAGScheduler.create_block_event(node, blockTime)
-            # Scheduler.create_block_event(node, blockTime)
 
     def generate_initial_events():
         currentTime = 0
@@ -153,7 +150,7 @@ class BlockCommit(BaseBlockCommit):
                 Scheduler.receive_block_event(recipient, block, blockDelay)
 
     # Update local blockchain, if necessary, upon receiving a new valid block
-    def update_local_blockchain(node, miner, depth):
+    def update_local_blockchain(node, miner, depth, currentTime):
         """
         This function updates the local blockchain of the node upon receiving a new valid block
         :param node: the node that receives the new block
@@ -195,22 +192,26 @@ class BlockCommit(BaseBlockCommit):
                 # remove transactions from the mempool pool that are included in the new block
                 block_data = miner.blockDAG.get_blockData_by_hash(block_id)
 
-                BlockCommit.update_transactionsPool(node, block_data)
+                BlockCommit.update_transactionsPool(node, block_data, currentTime)
                 references = [] if not hasattr(block_data, 'references') else block_data.references
 
                 # exclude blocks referenced by the new block from the forkedBlocks blockchain
-                BlockCommit.exclude_referenced_blocks_from_forkedBlocks_and_mempool(node, references)
+                BlockCommit.exclude_referenced_blocks_from_forkedBlocks_and_mempool(node, references, currentTime)
 
                 node.blockDAG.add_block(block_id, block_data.previous, references, block_data)
+
+            # TODO: Add transactions to the mempool pool that are included in forked block
 
     # TODO: Move to node class
     def remove_included_block_from_forks(node, block_id):
         for block in node.forkedBlockCandidates:
             if block.id == block_id:
+                print("Removing block from forkedBlockCandidates: " + str(block.id))
                 node.forkedBlockCandidates.remove(block)
                 break
-
-    def exclude_referenced_blocks_from_forkedBlocks_and_mempool(node, references):
+    
+    # TODO Check if in all calls also the forkedBlockCandidates should be updated
+    def exclude_referenced_blocks_from_forkedBlocks_and_mempool(node, references, currentTime):
         for blockId in references:
             BlockCommit.remove_included_block_from_forks(node, blockId)
 
@@ -219,4 +220,24 @@ class BlockCommit(BaseBlockCommit):
             # TODO: Not sure the block might not be in the blockDAG,
             #  but the transactions might still be in the mempool
             if blockData is not None:
-                BlockCommit.update_transactionsPool(node, blockData)
+                BlockCommit.update_transactionsPool(node, blockData, currentTime)
+
+    # Update local blockchain, if necessary, upon receiving a new valid block. This method is only triggered if Full technique is used
+    def update_transactionsPool(node, block, currentTime):
+        if InputsConfig.hasTrans and InputsConfig.Ttechnique == "Full":
+            block_dict = {t.id: t for t in block.transactions}
+            # I think some transactions cannot be deleted from the pool, because they are not in the pool "time-wise"
+            # Filter by time otherwise we remove transactions that are not in the pool
+            filtered_minerpool = [tx for tx in node.transactionsPool if tx.timestamp[1] <= currentTime]
+
+            if InputsConfig.print_progress:
+                print("Old pool size: ", len(filtered_minerpool))
+
+            filtered_minerpool = [t for t in filtered_minerpool if t.id not in block_dict]
+        
+            if InputsConfig.print_progress:
+                print("New pool size: ", len(filtered_minerpool))
+
+            other_transactions = [tx for tx in node.transactionsPool if tx.timestamp[1] > currentTime]
+            node.transactionsPool = [t for t in filtered_minerpool if t.id not in block_dict] + other_transactions
+            
