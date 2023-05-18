@@ -6,7 +6,7 @@ class Node(BaseNode):
 
     def __init__(self, id, hashPower):
         '''Initialize a new miner named name with hashrate measured in hashes per second.'''
-        super().__init__(id)  # ,blockchain,transactionsPool,blocks,balance)
+        super().__init__(id)
         self.hashPower = hashPower
         # self.blockchain = []  # create an array for each miner to store chain state locally
         

@@ -80,3 +80,8 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
         self.assertTrue(3 in descendants)
         self.assertTrue(2 in descendants)
         print(descendants)
+
+    def test_get_toplogical_sort(self):
+        blockDAG = self.get_test_graph()
+        topological_sort = blockDAG.get_topological_orderings()
+        self.assertEqual(topological_sort, [4,3,2,1,0])
