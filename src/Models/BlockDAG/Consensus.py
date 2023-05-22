@@ -23,6 +23,37 @@ class Consensus(BaseConsensus):
         return random.expovariate(hashPower * 1/InputsConfig.Binterval)
     
     """
+    This method iterates through all blockDAg nodes and gets all the blocks
+    """
+    def get_global_blockDAG():
+
+        # Start with graph of node 1
+        blockDAG = InputsConfig.NODES[0].blockDAG
+        
+        # Get all reachable blocks
+        block_ids = blockDAG.get_reachable_blocks()
+        
+        for block_id in block_ids:
+            block = blockDAG.get_blockData_by_hash(block_id)
+            
+            if block != None:
+                break
+
+            if block == None:
+                for node in InputsConfig.NODES:
+                    block = node.blockDAG.get_blockData_by_hash(block_id)
+                    if block != None:
+                        break
+            
+            if block == None:
+                print("Block not found")
+            else:
+                # Insert block into DAG
+                blockDAG.add_block(block_id, block["parent"], block["references"], block["block_data"])
+
+        return blockDAG
+
+    """
 	This method apply the longest-chain approach to resolve the forks that occur when nodes have multiple differeing copies of the blockchain ledger
     """
     def fork_resolution():

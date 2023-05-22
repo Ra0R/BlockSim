@@ -32,7 +32,7 @@ class ThesisStats:
 
         return similarity_matrix
 
-    def plot_mempool_similarity_matrix(self, mempool_similarity_matrix: list[list[float]]):
+    def plot_mempool_similarity_matrix(self, mempool_similarity_matrix: list[list[float]] = None):
         import numpy as np
 
         sns.set_theme(style="white")
@@ -50,7 +50,8 @@ class ThesisStats:
         plt.title("Mempool similarity matrix")
 
 
-        sns.heatmap(mempool_similarity_matrix, mask=mask, cmap=cmap,vmin=0,vmax=0.5, center=0,
+        sns.heatmap(mempool_similarity_matrix, mask=mask, cmap=cmap,vmin=0,
+                    vmax=1, center=0.5,
                     square=True, linewidths=.5, cbar_kws={"shrink": .5}, annot=True,
                     xticklabels=[f"Node {i}" for i in range(len(mempool_similarity_matrix))],
                     yticklabels=[f"Node {i}" for i in range(len(mempool_similarity_matrix))])

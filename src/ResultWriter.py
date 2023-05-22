@@ -128,13 +128,13 @@ class ResultWriter:
                 block_size = block.size,
                 transactions = [ResultWriter.transaction_to_recorded_transaction(transaction) for transaction in block.transactions]
             )
-
-    def get_mempools() -> list[MempoolOfNode]:
+    # TODO Move to consesus
+    def get_mempools(beforetime=InputsConfig.simTime) -> list[MempoolOfNode]:
         mempools : list[MempoolOfNode] = []
         for node in InputsConfig.NODES:
             mempool = MempoolOfNode(
                 node = node.id,
-                mempool =  [ResultWriter.transaction_to_recorded_transaction(transaction) for transaction in node.transactionsPool] 
+                mempool =  [ResultWriter.transaction_to_recorded_transaction(transaction) for transaction in node.transactionsPool if transaction.timestamp[1] < beforetime] 
             )
             mempools.append(mempool)
         return mempools

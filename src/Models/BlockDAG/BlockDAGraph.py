@@ -1,8 +1,12 @@
+from bloom_filter import BloomFilter
+
+
 class BlockDAGraph:
     def __init__(self):
         self.graph = {}
         self.last_block = -1
         self.depth = 0 # Depth holds the max depth of the graph
+        self.transaction_bloomfilter = BloomFilter(max_elements=100000, error_rate=0.1)
 
     def add_block(self, block_hash, parent, references=[], block=None):
         """
@@ -20,20 +24,25 @@ class BlockDAGraph:
 
         self.graph[block_hash] = {"parent": parent, "references": set(references), "block_data": block,  "_depth": depth}
         self.last_block = block_hash
-
+        
         # Update depth
         self.depth = max(self.depth, depth)
 
-    def update_block(self, block_hash, references=[]):
-        """
-        Update a block in the DAG
-        References is a list of abandoned blocks that this block references
+        # Add transaction ids to bloom filter
+        # if block != None:
+        #     for transaction in block.transactions:
+        #         self.transaction_bloomfilter.add(transaction.id)
 
-        This method is used when a miner creates a block and wants to update the references
-        TODO: Since blocks are not propagated to the miner itself
-        """
-        # Update the references
-        self.graph[block_hash]["references"] = set(references)
+    # def update_block(self, block_hash, references=[]):
+    #     """
+    #     Update a block in the DAG
+    #     References is a list of abandoned blocks that this block references
+
+    #     This method is used when a miner creates a block and wants to update the references
+    #     TODO: Since blocks are not propagated to the miner itself
+    #     """
+    #     # Update the references
+    #     self.graph[block_hash]["references"] = set(references)
 
     def find_fork_candidates_id(self, depth):
         """
@@ -279,7 +288,23 @@ class BlockDAGraph:
         ordering[i] = block_hash
 
         return i - 1, ordering
+    
+    def contains_tx(self, transaction_id):
+        """
+        Check if a transaction is in the DAG
+        """
 
+        # Check bloomFilter first 
+        if transaction_id not in self.transaction_bloomfilter:
+            return False
+        
+        # Iterate over all blocks and check if the transaction is in there
+        for _, data in self.graph.items():
+            for transaction in data["block_data"].transactions:
+                if transaction.id == transaction_id:
+                    return True
+        
+        return False
 
 class BlockDAGraphComparison:
     def get_differing_blocks(smallerGraph : BlockDAGraph, biggerGraph : BlockDAGraph):

@@ -14,6 +14,7 @@ class InputsConfig:
 
     model = 4
     plot_similarity = False
+    plot_similarity_progress = False
     plot_chain = True
     print_progress = False
     ''' Input configurations for the base model '''
@@ -50,9 +51,9 @@ class InputsConfig:
     ''' Input configurations for the BlockDAG model'''
     if model == 1 or model == 4:
         ''' Block Parameters '''
-        Binterval = 30  # Average time (in seconds)for creating a block in the blockchain
+        Binterval = 60  # Average time (in seconds)for creating a block in the blockchain
         Bsize = 1.0  # The block size in MB
-        Bdelay = 12.6 # Mean time for block delay
+        Bdelay = 6 # Mean time for block delay
          # average block propogation delay in seconds #https://bitcoin.stackexchange.com/questions/10821/how-long-does-it-take-to-propagate-a-newly-created-block-to-the-entire-bitcoin-n
         # 5.1 #Ref: https://bitslog.wordpress.com/2016/04/28/uncle-mining-an-ethereum-consensus-protocol-flaw/
         Breward = 12.5  # Reward for mining a block
@@ -83,7 +84,7 @@ class InputsConfig:
             Node(id=0, hashPower=50), 
             Node(id=1, hashPower=20), 
             Node(id=2, hashPower=40),
-            # Node(id=3, hashPower=30),
+            Node(id=3, hashPower=30),
             # Node(id=4, hashPower=20),
             # Node(id=5, hashPower=10),
             # Node(id=6, hashPower=10),
@@ -97,7 +98,7 @@ class InputsConfig:
 
 
         ''' Simulation Parameters '''
-        simTime = 1500  # the simulation length (in seconds)
+        simTime = 4000  # the simulation length (in seconds)
         Runs = 1  # Number of simulation runs
         
     ''' Input configurations for Ethereum model '''

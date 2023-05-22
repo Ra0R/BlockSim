@@ -70,6 +70,10 @@ def main():
         while not Queue.isEmpty() and clock <= InputsConfig.simTime:
             next_event = Queue.get_next_event()
             clock = next_event.time  # move clock to the time of the event
+        
+            if InputsConfig.plot_similarity_progress and len(event_log) % 45 == 0:
+                calculate_mempool_similarity_matrix(True, clock)
+           
             BlockCommit.handle_event(next_event)
             event_log.append(next_event)
             Queue.remove_event(next_event)
@@ -252,9 +256,10 @@ def calculate_inclusion_rates(inclusion_matrix):
     
     return inclusion_rates
 
-def calculate_mempool_similarity_matrix():
-    sim_matrix = ThesisStats().mempool_similarity_matrix(ResultWriter.get_mempools())
-    if InputsConfig.plot_similarity:
+def calculate_mempool_similarity_matrix(plot=False, time=InputsConfig.simTime):
+    
+    sim_matrix = ThesisStats().mempool_similarity_matrix(ResultWriter.get_mempools(time))
+    if InputsConfig.plot_similarity or plot:
         plt = ThesisStats().plot_mempool_similarity_matrix(sim_matrix)
         plt.show(block=True)
 

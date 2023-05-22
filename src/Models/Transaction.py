@@ -167,6 +167,6 @@ class FullTransaction():
 
         if InputsConfig.model == 4 and InputsConfig.tx_consistency == True:
             # Filter all transactions that are in the blockDAG already
-            transactions = [tx for tx in transactions if tx.id not in miner.blockDAG.get_all_transaction_ids()]
+            transactions = [tx for tx in transactions if not miner.blockDAG.contains_tx(tx.id)]
         
         return transactions, size
