@@ -138,16 +138,17 @@ def calculate_stats():
 
     inclusion_rate_per_block = calculate_inclusion_rate_per_block(inclusion_matrix)
     block_dag = Consensus.get_global_blockDAG()
-    block_dag.plot_with_inclusion_rate_per_block(inclusion_rate_per_block)
+    if InputsConfig.plot_inclusion:
+        block_dag.plot_with_inclusion_rate_per_block(inclusion_rate_per_block)
 
     # Save inclusion matrix to json file
     with open('inclusion_matrix.json', 'w') as fp:
         json.dump(inclusion_matrix, fp)
 
-    print("Avg fork rate: ", avg_fork_rate)
+    print("Avg fork rate: ", round(avg_fork_rate * 100,2), "% [fork/blocks in DAG]")
     print("Sim matrix: ", sim_matrix)
-    print("Transaction troughput: ", transaction_troughput)
-    print("Time to inclusion: ", inclusion_matrix)
+    print("Transaction troughput: ", transaction_troughput, "[tx/s]")
+    # print("Time to inclusion: ", inclusion_matrix)
     print("Inclusion rates: ", inclusion_rates)
 
 def calculate_fork_rate():
@@ -252,7 +253,7 @@ def calculate_inclusion_rates(inclusion_matrix):
 
             inclusion_rates["fork_id"].append(fork_id)
             inclusion_rates["inclusion_rate"].append(fork_inclusion_rate)
-            inclusion_rates["inclusion_rate_later_time"].append(inclusion_rate_later_time)
+            # inclusion_rates["inclusion_rate_later_time"].append(inclusion_rate_later_time)
     
     return inclusion_rates
 

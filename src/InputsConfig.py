@@ -13,10 +13,11 @@ class InputsConfig:
     """
 
     model = 4
-    plot_similarity = False
+    plot_similarity = True
     plot_similarity_progress = False
     plot_chain = True
-    print_progress = False
+    print_progress = True
+    plot_inclusion = False
     ''' Input configurations for the base model '''
     if model == 0:
 
@@ -53,9 +54,8 @@ class InputsConfig:
         ''' Block Parameters '''
         Binterval = 60  # Average time (in seconds)for creating a block in the blockchain
         Bsize = 1.0  # The block size in MB
-        Bdelay = 6 # Mean time for block delay
-         # average block propogation delay in seconds #https://bitcoin.stackexchange.com/questions/10821/how-long-does-it-take-to-propagate-a-newly-created-block-to-the-entire-bitcoin-n
-        # 5.1 #Ref: https://bitslog.wordpress.com/2016/04/28/uncle-mining-an-ethereum-consensus-protocol-flaw/
+        Bdelay = 6 # average block propogation delay in seconds #https://bitcoin.stackexchange.com/questions/10821/how-long-does-it-take-to-propagate-a-newly-created-block-to-the-entire-bitcoin-n
+
         Breward = 12.5  # Reward for mining a block
 
         ''' Transaction Parameters '''
@@ -63,7 +63,7 @@ class InputsConfig:
         Ttechnique = "Full"  # Full/Light to specify the way of modelling transactions
         Tn = 60  # The rate of the number of transactions to be created per second
         
-        tx_consistency = False # If true no transaction can be delivered twice
+        tx_consistency = False # If disabled, transactions may be included twice
 
         # The average transaction propagation delay in seconds (Only if Full technique is used)
         Tdelay = 15.1
@@ -98,7 +98,7 @@ class InputsConfig:
 
 
         ''' Simulation Parameters '''
-        simTime = 4000  # the simulation length (in seconds)
+        simTime = 1500  # the simulation length (in seconds)
         Runs = 1  # Number of simulation runs
         
     ''' Input configurations for Ethereum model '''

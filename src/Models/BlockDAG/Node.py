@@ -19,7 +19,7 @@ class Node(BaseNode):
     def __str__(self):
       return "-> Node " + str(self.id) + "\n" \
       + " -> MainChain:" + str(self.blockDAG.get_main_chain()) + "\n" \
-      + "  -> Forked Blocks: " + str([block.id for block in self.forkedBlockCandidates]) + "\n"
+    #   + "  -> Forked Blocks: " + str([block.id for block in self.forkedBlockCandidates]) + "\n"
 
 
     """

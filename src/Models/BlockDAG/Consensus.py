@@ -41,9 +41,8 @@ class Consensus(BaseConsensus):
 
             if block == None:
                 for node in InputsConfig.NODES:
-                    block = node.blockDAG.get_blockData_by_hash(block_id)
-                    if block != None:
-                        break
+                    if node.blockDAG.get_blockData_by_hash(block_id) != None:
+                        block = node.blockDAG.get_blockData_by_hash(block_id)
             
             if block == None:
                 print("Block not found")
