@@ -52,7 +52,7 @@ class InputsConfig:
     ''' Input configurations for the BlockDAG model'''
     if model == 1 or model == 4:
         ''' Block Parameters '''
-        Binterval = 60  # Average time (in seconds)for creating a block in the blockchain
+        Binterval = 10  # Average time (in seconds)for creating a block in the blockchain
         Bsize = 1.0  # The block size in MB
         Bdelay = 6 # average block propogation delay in seconds #https://bitcoin.stackexchange.com/questions/10821/how-long-does-it-take-to-propagate-a-newly-created-block-to-the-entire-bitcoin-n
 
@@ -63,7 +63,7 @@ class InputsConfig:
         Ttechnique = "Full"  # Full/Light to specify the way of modelling transactions
         Tn = 60  # The rate of the number of transactions to be created per second
         
-        tx_consistency = False # If disabled, transactions may be included twice
+        tx_consistency = True # If disabled, transactions may be included twice
 
         # The average transaction propagation delay in seconds (Only if Full technique is used)
         Tdelay = 15.1
