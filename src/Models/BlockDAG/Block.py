@@ -16,3 +16,6 @@ class Block(BaseBlock):
 
         super().__init__(depth, id, previous, timestamp, miner, transactions, size)
         self.references = []
+
+    def __str__(self) -> str:
+        return super().__str__() + " references: " + str(self.references)
