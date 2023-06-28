@@ -1,5 +1,5 @@
 class Block(object):
-    
+
     """ Defines the base Block model.
 
     :param int depth: the index of the block in the local blockchain ledger (0 for genesis block)
@@ -12,13 +12,13 @@ class Block(object):
     """
 
     def __init__(self,
-	 depth=0,
-	 id=0,
-	 previous=-1,
-	 timestamp=0,
-	 miner=None,
-	 transactions=[],
-	 size=1.0):
+                 depth=0,
+                 id=0,
+                 previous=-1,
+                 timestamp=0,
+                 miner=None,
+                 transactions=[],
+                 size=1.0):
 
         self.depth = depth
         self.id = id
@@ -27,3 +27,13 @@ class Block(object):
         self.miner = miner
         self.transactions = transactions or []
         self.size = size
+
+    def __str__(self) -> str:
+        # With newlines
+        return "Block: " + str(self.id) + "\n" + \
+            "  depth: " + str(self.depth) + "\n" + \
+            "  previous: " + str(self.previous) + "\n" + \
+            "  timestamp: " + str(self.timestamp) + "\n" + \
+            "  miner: " + str(self.miner) + "\n" + \
+            "  transactions: " + str([tx.id for tx in self.transactions]) + "\n" + \
+            "  size: " + str(self.size) + "\n"
