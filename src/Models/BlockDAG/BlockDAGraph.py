@@ -1,4 +1,6 @@
-from bloom_filter import BloomFilter
+import pickle
+
+# from bloom_filter import BloomFilter
 
 
 class BlockDAGraph:
@@ -6,7 +8,8 @@ class BlockDAGraph:
         self.graph = {}
         self.last_block = -1
         self.depth = 0 # Depth holds the max depth of the graph
-        self.transaction_bloomfilter = BloomFilter(max_elements=100000, error_rate=0.1)
+        self.transactions = set()
+        # self.transaction_bloomfilter = BloomFilter(max_elements=100000, error_rate=0.1)
 
     def add_block(self, block_hash, parent, references=[], block=None):
         """
@@ -28,10 +31,11 @@ class BlockDAGraph:
         # Update depth
         self.depth = max(self.depth, depth)
 
-        # Add transaction ids to bloom filter
-        # if block != None:
-        #     for transaction in block.transactions:
-        #         self.transaction_bloomfilter.add(transaction.id)
+        # Add transaction ids to set
+        if block is not None:
+            for transaction in block.transactions:
+                self.transactions.add(transaction.id)
+                # self.transaction_bloomfilter.add(transaction.id)
 
     # def update_block(self, block_hash, references=[]):
     #     """
@@ -55,6 +59,15 @@ class BlockDAGraph:
         
         return candidates
     
+    def get_graph_before_timestamp(self, timestamp):
+        """
+        Get the graph at a given timestamp
+        """
+        graph = BlockDAGraph()
+        for block_hash, data in self.graph.items():
+            if data["block_data"].timestamp <= timestamp:
+                graph.add_block(block_hash, data["parent"], data["references"], data["block_data"])
+        return graph
 
     def get_main_chain(self) -> list:
         """
@@ -186,7 +199,7 @@ class BlockDAGraph:
         
         return self.graph[block_hash]["block_data"]
     
-    def get_descendants(self, block_hash):
+    def get_ancestors(self, block_hash):
         """ 
         Get all descendants of a block
         """
@@ -198,7 +211,7 @@ class BlockDAGraph:
         # Add all descendants of the children
         for child_hash, data in self.graph.items():
             if data["parent"] == block_hash:
-                descendants = descendants.union(self.get_descendants(child_hash))
+                descendants = descendants.union(self.get_ancestors(child_hash))
         
         return descendants
 
@@ -212,7 +225,19 @@ class BlockDAGraph:
         else:
             return -1
         
+    def get_forks(self):
+        forks = self.get_reachable_blocks() - set(self.get_main_chain())
+        return forks
+
     def is_in_chain_of_block(self, block_hash, block_hash2):
+        Visited = {
+                    block_hash: False for block_hash in self.graph.keys()}
+        Visited[-1] = True  # Genesis block is always visited
+
+        return self._is_in_chain_of_block(block_hash, block_hash2, Visited)
+        
+
+    def _is_in_chain_of_block(self, block_hash, block_hash2, Visited):
         """ 
         Check if block2 is in the chain of block1
         """
@@ -221,9 +246,30 @@ class BlockDAGraph:
 
         if block_hash == -1:
             return False
+        # Check if block2 is in the chain of the parent
+        is_in_parent = False
+        if self.block_exists(block_hash):
+            # Check if the parent has been visited
+            if Visited[self.graph[block_hash]["parent"]] == False:
+                # Mark the parent as visited
+                Visited[self.graph[block_hash]["parent"]] = True
 
-        return self.is_in_chain_of_block(self.graph[block_hash]["parent"], block_hash2)
+                is_in_parent = self._is_in_chain_of_block(
+                    self.graph[block_hash]["parent"], block_hash2, Visited)
 
+        # Check if block2 is in the chain of any of the references
+        is_in_refernce = False
+        if self.block_exists(block_hash):
+            # Check if any of the references has been visited
+            for reference in self.graph[block_hash]["references"]:
+                if reference in Visited and Visited[reference] == False:
+                    # Mark the reference as visited
+                    Visited[reference] = True
+                    is_in_refernce = self._is_in_chain_of_block(
+                        reference, block_hash2, Visited)
+
+        return is_in_parent or is_in_refernce
+    
     def to_list(self):
         """
         Convert the graph to a list of block hashes
@@ -252,10 +298,10 @@ class BlockDAGraph:
         
         return reachable_blocks
 
-    def get_topological_orderings(self):
+    def get_topological_ordering(self):
         """
-        Depth first search to get all topological orderings
-        Parent references are treated preferentially
+        Depth first search to get topological ordering
+        Parent (main-chain) references are treated preferentially
         """
         N = len(self.graph)
         Visited = {block_hash: False for block_hash in self.graph.keys()}
@@ -278,11 +324,12 @@ class BlockDAGraph:
 
         # Recur for all the vertices adjacent to this vertex
         for parent in [self.graph[block_hash]["parent"]]:
-            if not Visited[parent]:
+            # If index exists in visited 
+            if parent in Visited and not Visited[parent]:
                 i, ordering = self.topological_sort(parent, Visited, ordering, i)
 
         for reference in self.graph[block_hash]["references"]:
-            if not Visited[reference]:
+            if reference in Visited and not Visited[reference] :
                 i, ordering = self.topological_sort(reference, Visited, ordering, i)
 
         ordering[i] = block_hash
@@ -295,16 +342,17 @@ class BlockDAGraph:
         """
 
         # Check bloomFilter first 
-        if transaction_id not in self.transaction_bloomfilter:
-            return False
+        # if transaction_id not in self.transaction_bloomfilter:
+        #     return False
         
         # Iterate over all blocks and check if the transaction is in there
-        for _, data in self.graph.items():
-            for transaction in data["block_data"].transactions:
-                if transaction.id == transaction_id:
-                    return True
-        
-        return False
+
+        return transaction_id in self.transactions
+
+    def save_graph_to_file(self, filename):
+        # Save pickle to file
+        with open(filename, 'wb') as f:
+            pickle.dump(self, f)
 
 class BlockDAGraphComparison:
     def get_differing_blocks(smallerGraph : BlockDAGraph, biggerGraph : BlockDAGraph):

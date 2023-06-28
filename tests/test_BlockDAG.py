@@ -67,7 +67,7 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
 
     def test_get_descendants(self):
         blockDAG = self.get_test_graph()
-        descendants = blockDAG.get_descendants(1)
+        descendants = blockDAG.get_ancestors(1)
         self.assertTrue(4 in descendants)
         self.assertTrue(3 in descendants)
         self.assertTrue(2 in descendants)
@@ -75,13 +75,34 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
     def test_get_ancestors(self):
         BlockDAG = self.get_test_graph()
 
-        descendants = BlockDAG.get_descendants(1)
+        descendants = BlockDAG.get_ancestors(1)
         self.assertTrue(4 in descendants)
         self.assertTrue(3 in descendants)
         self.assertTrue(2 in descendants)
         print(descendants)
 
     def test_get_toplogical_sort(self):
+        # Ascii Graph:
+        #  0
+        #  |
+        #  1
+        # / \
+        # 2 3
+        # \ :
+        #   4
+
         blockDAG = self.get_test_graph()
-        topological_sort = blockDAG.get_topological_orderings()
-        self.assertEqual(topological_sort, [4,3,2,1,0])
+        topological_sort = blockDAG.get_topological_ordering()
+        topological_sort.reverse()
+        self.assertEqual(topological_sort, [0,1,2,3,4])
+
+    def test_is_in_chain_of_block(self):
+        blockDAG = self.get_test_graph()
+        self.assertTrue(blockDAG.is_in_chain_of_block(4, 1))
+        self.assertTrue(blockDAG.is_in_chain_of_block(4, 0))  
+        self.assertTrue(blockDAG.is_in_chain_of_block(4, 3))
+        self.assertTrue(blockDAG.is_in_chain_of_block(4, 2))
+        self.assertFalse(blockDAG.is_in_chain_of_block(1, 4))
+        self.assertFalse(blockDAG.is_in_chain_of_block(2, 4))
+        self.assertFalse(blockDAG.is_in_chain_of_block(3, 4))
+        self.assertFalse(blockDAG.is_in_chain_of_block(0, 4))

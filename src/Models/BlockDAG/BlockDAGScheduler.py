@@ -29,10 +29,14 @@ class BlockDAGScheduler:
                     if not miner.blockDAG.is_in_chain_of_block(block.previous, forkedBlock.id):
                         block.references.append(forkedBlock.id)
                         included_blocks.append(forkedBlock)
+                    else:
+                        print("Block " + str(forkedBlock.id) + 
+                              " is already in the chain of block "
+                                + str(block.previous))
                         
                 # Remove included blocks from forked blocks
-                for included_block in included_blocks:
-                   miner.forkedBlockCandidates.remove(included_block)
+                # for included_block in included_blocks:
+                #   miner.forkedBlockCandidates.remove(included_block)
 
             event = Event(eventType, block.miner, eventTime,
                           block)  # create the event
