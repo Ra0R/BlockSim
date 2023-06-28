@@ -76,3 +76,7 @@ class Node(BaseNode):
     """
     def last_block(self):
         return self.blockDAG.get_last_block()
+
+
+    def save_graph_to_file(self, filename):
+        self.blockDAG.save_graph_to_file(filename)

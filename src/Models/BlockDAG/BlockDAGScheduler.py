@@ -30,9 +30,7 @@ class BlockDAGScheduler:
                         block.references.append(forkedBlock.id)
                         included_blocks.append(forkedBlock)
                     else:
-                        print("Block " + str(forkedBlock.id) + 
-                              " is already in the chain of block "
-                                + str(block.previous))
+                        print("Block " + str(forkedBlock.id) +  " is already in the chain of block " + str(block.previous))
                         
                 # Remove included blocks from forked blocks
                 # for included_block in included_blocks:
