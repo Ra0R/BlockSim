@@ -69,6 +69,9 @@ class ThesisStats:
         return plt
 
     def calculate_fork_rate(list_of_all_block_hashes, main_chain_block_hashes):
+        if len(list_of_all_block_hashes) == 0:
+            return 0
+        
         return (len(list_of_all_block_hashes) - len(main_chain_block_hashes)) / len(list_of_all_block_hashes)
 
     def calculate_stats(self, save_to_file=True, blockDAG: BlockDAGraph = Consensus.get_global_blockDAG()):
@@ -79,9 +82,9 @@ class ThesisStats:
 
         if model == 4:
             blockDAGs = [node.blockDAG for node in InputsConfig.NODES]
-            avg_fork_rate = ThesisStats.calculate_fork_rates_blockChain(
-                blockDAGs)
-            ThesisStats.save_nodes_to_disk(save_to_file)
+            avg_fork_rate = ThesisStats.calculate_fork_rates_blockDAG(blockDAGs)
+            if save_to_file:
+                ThesisStats.save_nodes_to_disk()
 
         sim_matrix = ThesisStats.calculate_mempool_similarity_matrix()
         transaction_troughput = ThesisStats.calculate_transaction_troughput()

@@ -16,6 +16,11 @@ class BlockDAGraph:
         Add a block to the DAG
         References is a list of abandoned blocks that this block references
         Previous is the block that this block is built on 
+        Params:
+            block_hash: The hash of the block
+            parent: The parent of the block
+            references: The references of the block
+            block: The block object
         """
         #[ {0: {parent: [], references: []}}, {1: {parent: [0], references: []}} ]
 
@@ -24,7 +29,7 @@ class BlockDAGraph:
         depth = 0
         if parent != -1:
             depth = self.graph[parent]["_depth"] + 1
-
+        
         self.graph[block_hash] = {"parent": parent, "references": set(references), "block_data": block,  "_depth": depth}
         self.last_block = block_hash
         
@@ -35,7 +40,16 @@ class BlockDAGraph:
         if block is not None:
             for transaction in block.transactions:
                 self.transactions.add(transaction.id)
-                # self.transaction_bloomfilter.add(transaction.id)
+            # self.transaction_bloomfilter.add(transaction.id)
+
+    def simluate_add_block(self, block_hash, parent, references=[], block=None, graph=None):
+        if graph is None:
+            graph = self.graph
+
+        graph_copy = graph.copy()
+        graph_copy[block_hash] = {"parent": parent, "references": set(references), "block_data": block,  "_depth": 0}
+        return graph_copy
+
 
     # def update_block(self, block_hash, references=[]):
     #     """
@@ -90,21 +104,32 @@ class BlockDAGraph:
     def get_last_block(self):
         return self.last_block
     
-    def plot(self):
+    def plot(self, node_id = 0):
         import graphviz as gv
 
         graph = gv.Digraph(format='png')
+        # Graph Title is node 
+        graph.node("Title", "Block DAG of Node" + str(node_id), shape="box", fontname="Helvetica")
         # Graph previous as full edges and references as dashed edges
         for block_number, data in self.graph.items():
             parent = data["parent"]
             references = data["references"]
-
+            color = "black"
+            # Mark main chain
+            if block_number in self.get_main_chain() != 0:
+                color = "red"
             # Add the block
-            graph.node(str(block_number), str(block_number) 
+            node_label = str(block_number) 
+            if data["block_data"] is not None:
+                node_label += "\n s_ts: " + str(data["block_data"].timestamp)  
+                node_label += "\n rx_ts: " + str(data["block_data"].rx_timestamp)
+                node_label += "\n miner:" + str(data["block_data"].miner)
+            
+            graph.node(str(block_number), node_label 
                     #    + "\n |T|:" + str(len(data["block_data"].transactions))
                        ,
-                        shape="box", fontname="Helvetica")
-
+                        shape="box", fontname="Helvetica", color=color)
+            
             if parent == -1:
                 # Skip plotting
                 graph.edge(str(block_number), str(parent), style="solid")
@@ -216,8 +241,10 @@ class BlockDAGraph:
         return descendants
 
 
-    def block_exists(self, block_hash):
-        return block_hash in self.graph
+    def block_exists(self, block_hash, graph = None):
+        if graph is None:
+            graph = self.graph
+        return block_hash in graph
 
     def get_depth_of_block(self, block_hash):
         if self.block_exists(block_hash):
@@ -229,45 +256,57 @@ class BlockDAGraph:
         forks = self.get_reachable_blocks() - set(self.get_main_chain())
         return forks
 
-    def is_in_chain_of_block(self, block_hash, block_hash2):
-        Visited = {
-                    block_hash: False for block_hash in self.graph.keys()}
+    def is_in_chain_of_block(self, block_hash, block_hash2, graph = None):
+        if graph is None:
+            graph = self.graph
+        """
+        Check if block2 is in the chain of block1
+        """
+        Visited = {block_hash: False for block_hash in graph.keys()}
         Visited[-1] = True  # Genesis block is always visited
 
-        return self._is_in_chain_of_block(block_hash, block_hash2, Visited)
+        return self._is_in_chain_of_block(block_hash, block_hash2, Visited, graph)
         
 
-    def _is_in_chain_of_block(self, block_hash, block_hash2, Visited):
+    def _is_in_chain_of_block(self, block_hash, block_hash2, Visited, graph = None):
         """ 
         Check if block2 is in the chain of block1
         """
+        if graph is None:
+            graph = self.graph
+        
         if block_hash == block_hash2:
             return True
 
         if block_hash == -1:
             return False
+        
         # Check if block2 is in the chain of the parent
         is_in_parent = False
-        if self.block_exists(block_hash):
+        if self.block_exists(block_hash, graph):
             # Check if the parent has been visited
-            if Visited[self.graph[block_hash]["parent"]] == False:
+            if Visited[graph[block_hash]["parent"]] == False:
                 # Mark the parent as visited
-                Visited[self.graph[block_hash]["parent"]] = True
+                Visited[graph[block_hash]["parent"]] = True
 
-                is_in_parent = self._is_in_chain_of_block(
-                    self.graph[block_hash]["parent"], block_hash2, Visited)
+                is_in_parent = self._is_in_chain_of_block(graph[block_hash]["parent"], block_hash2, Visited, graph)
+        else: 
+            # The block does not exist
+            print("Block does not exist while checking if block is in chain of another block")
 
         # Check if block2 is in the chain of any of the references
         is_in_refernce = False
-        if self.block_exists(block_hash):
+        if self.block_exists(block_hash, graph):
             # Check if any of the references has been visited
-            for reference in self.graph[block_hash]["references"]:
+            for reference in graph[block_hash]["references"]:
                 if reference in Visited and Visited[reference] == False:
                     # Mark the reference as visited
                     Visited[reference] = True
-                    is_in_refernce = self._is_in_chain_of_block(
-                        reference, block_hash2, Visited)
-
+                    is_in_refernce = self._is_in_chain_of_block(reference, block_hash2, Visited, graph)
+        else:
+            # The block does not exist
+            print("Block does not exist while checking if block is in chain of another block")
+            
         return is_in_parent or is_in_refernce
     
     def to_list(self):

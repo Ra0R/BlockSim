@@ -23,19 +23,33 @@ class BlockDAGScheduler:
 
             # Extend forked blocks
             if(len(miner.forkedBlockCandidates) > 0):
-                block.references = []
+                references = []
                 included_blocks = []
                 for forkedBlock in miner.forkedBlockCandidates:
+                    
                     if not miner.blockDAG.is_in_chain_of_block(block.previous, forkedBlock.id):
-                        block.references.append(forkedBlock.id)
+                        print("Block " + str(forkedBlock.id) +  " is not in the chain of block " + str(block.previous))
+                        references.append(forkedBlock.id)
                         included_blocks.append(forkedBlock)
-                    else:
-                        print("Block " + str(forkedBlock.id) +  " is already in the chain of block " + str(block.previous))
-                        
-                # Remove included blocks from forked blocks
-                # for included_block in included_blocks:
-                #   miner.forkedBlockCandidates.remove(included_block)
 
+            
+                # Check if after adding a reference, the block is in the chain of another reference
+                for ref1 in references:
+                    graph_sim = miner.blockDAG.simluate_add_block(block.id, block.previous, [ref1])
+                    for ref2 in references:
+                        if not ref1 == ref2:
+                            if miner.blockDAG.is_in_chain_of_block(ref1, ref2, graph_sim):
+                                print("Referenced block: " + str(ref1) +  " is already in the chain of another reference: " + str(ref2))
+                                if ref1 in references:
+                                    references.remove(ref1)
+
+                            if miner.blockDAG.is_in_chain_of_block(ref2, ref1, graph_sim):
+                                print("Referenced block: " + str(ref2) +  " is already in the chain of another reference: " + str(ref1))
+                                if ref2 in references:
+                                    references.remove(ref2)
+
+                block.references = references
+                
             event = Event(eventType, block.miner, eventTime,
                           block)  # create the event
             Queue.add_event(event)  # add the event to the queue

@@ -7,6 +7,7 @@ class Block(BaseBlock):
                  depth=0,
                  id=0,
                  timestamp=0,
+                 rx_timestamp=0,
                  miner=None,
                  transactions=[],
                  size=1.0,
@@ -16,6 +17,7 @@ class Block(BaseBlock):
 
         super().__init__(depth, id, previous, timestamp, miner, transactions, size)
         self.references = []
+        self.rx_timestamp = rx_timestamp
 
     def __str__(self) -> str:
         return super().__str__() + " references: " + str(self.references)

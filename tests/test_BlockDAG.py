@@ -10,7 +10,7 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
         blockDAG = BlockDAGraph()
 
         # Add genesis block
-        blockDAG.add_block(0, -1 , [])
+        blockDAG.add_block(0, -1, [])
 
         blockDAG.add_block(1, 0, [])
         blockDAG.add_block(2, 1, [])
@@ -36,7 +36,7 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
         blockDAG = self.get_test_graph()
         blockDAG2 = self.get_test_graph()
         self.assertTrue(BlockDAGraphComparison.equal(blockDAG, blockDAG2))
-    
+
     def test_graph_different(self):
         blockDAG = self.get_test_graph()
         blockDAG2 = self.get_test_graph()
@@ -57,7 +57,6 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
     def test_get_last_block(self):
         blockDAG = self.get_test_graph()
         self.assertEqual(blockDAG.get_last_block(), 4)
-
 
     def test_fork_candidates(self):
         blockDAG = self.get_test_graph()
@@ -94,15 +93,76 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
         blockDAG = self.get_test_graph()
         topological_sort = blockDAG.get_topological_ordering()
         topological_sort.reverse()
-        self.assertEqual(topological_sort, [0,1,2,3,4])
+        self.assertEqual(topological_sort, [0, 1, 2, 3, 4])
 
     def test_is_in_chain_of_block(self):
         blockDAG = self.get_test_graph()
         self.assertTrue(blockDAG.is_in_chain_of_block(4, 1))
-        self.assertTrue(blockDAG.is_in_chain_of_block(4, 0))  
+        self.assertTrue(blockDAG.is_in_chain_of_block(4, 0))
         self.assertTrue(blockDAG.is_in_chain_of_block(4, 3))
         self.assertTrue(blockDAG.is_in_chain_of_block(4, 2))
         self.assertFalse(blockDAG.is_in_chain_of_block(1, 4))
         self.assertFalse(blockDAG.is_in_chain_of_block(2, 4))
         self.assertFalse(blockDAG.is_in_chain_of_block(3, 4))
         self.assertFalse(blockDAG.is_in_chain_of_block(0, 4))
+
+    def test_is_in_chain_of_block_extended(self):
+        # Ascii Graph:
+        #  0
+        #  |
+        #  1
+        # / \
+        # 2 3
+        # | :
+        # 4
+        # |
+        # 5
+        # |
+        # 6
+        # |
+        # 7
+        # |
+        # 8
+        # |
+        # 9
+
+        blockDAG = self.get_test_graph()
+        blockDAG.add_block(5, 4, [])
+        blockDAG.add_block(6, 5, [])
+        blockDAG.add_block(7, 6, [])
+        blockDAG.add_block(8, 7, [])
+
+        self.assertTrue(blockDAG.is_in_chain_of_block(5, 3))
+        self.assertTrue(blockDAG.is_in_chain_of_block(6, 3))
+        self.assertTrue(blockDAG.is_in_chain_of_block(7, 3))
+        self.assertTrue(blockDAG.is_in_chain_of_block(8, 3))
+
+    def test_refrence_to_refrence(self):
+        # Ascii Graph:
+        #  0
+        #  |
+        #  1
+        # / \
+        # 2  3
+        # |  |
+        # 4  7
+        # |  ?
+        # 6 New block to be created
+
+        blockDAG = self.get_test_graph()
+
+        blockDAG.add_block(7, 3, [])
+        # blockDAG.add_block(6, 4, [3,7])
+        self.assertTrue(blockDAG.is_in_chain_of_block(6, 3))
+        # This is wrong because the previous refence is not in the chain of the new block
+        # We should simulate this by adding a block that is not in the chain of the new block
+        self.assertTrue(blockDAG.is_in_chain_of_block(7, 3))
+
+    def test_simulation_reference(self):
+        blockDAG = self.get_test_graph()
+
+        blockDAG.add_block(7, 3, [])
+        graph_sim = blockDAG.simluate_add_block(6, 4, [3, 7])
+
+        self.assertTrue(blockDAG.is_in_chain_of_block(6, 3, graph_sim))
+        self.assertTrue(blockDAG.is_in_chain_of_block(7, 3, graph_sim))

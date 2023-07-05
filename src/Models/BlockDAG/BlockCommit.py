@@ -42,6 +42,7 @@ class BlockCommit(BaseBlockCommit):
                 event.block.transactions = blockTrans
                 event.block.usedgas = blockSize
 
+            event.block.rx_timestamp = eventTime
             # Add immediately to local node's blockDAG
             miner.blockDAG.add_block(event.block.id, event.block.previous, event.block.references, event.block)
             
@@ -56,7 +57,9 @@ class BlockCommit(BaseBlockCommit):
             BlockCommit.propagate_block(event.block)
             # Start mining or working on the next block
             BlockCommit.generate_next_block(miner, eventTime)
-        
+        else:
+            print("Block " + str(event.block.id) + " is not built on top of the last block " + str(blockPrev) + " of node " + str(minerId) + " at time " + str(eventTime) + " but on top of " + str(miner.last_block()))
+
     # Block Receiving Event
     def receive_block(event):
 
@@ -64,7 +67,7 @@ class BlockCommit(BaseBlockCommit):
         minerId = miner.id
         currentTime = event.time
         blockPrev = event.block.previous  # previous block id
-
+        # event.block.rx_timestamp = currentTime # TODO: <- Careful this will override block creation time for all nodes
         node: Node = InputsConfig.NODES[event.node]  # recipint
         lastBlockId = node.last_block()  # the id of last block
 
@@ -147,6 +150,7 @@ class BlockCommit(BaseBlockCommit):
             if recipient.id != block.miner:
                 # draw block propagation delay from a distribution !! or you can assign 0 to ignore block propagation delay
                 blockDelay = Network.block_prop_delay()
+                print("Propagating block " + str(block.id) + " from node " + str(block.miner) + " to node " + str(recipient.id) + " with delay " + str(blockDelay))
                 Scheduler.receive_block_event(recipient, block, blockDelay)
 
     # Update local blockchain, if necessary, upon receiving a new valid block
