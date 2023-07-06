@@ -12,6 +12,7 @@ elif InputsConfig.model == 3:
 else:
     from Models.Block import Block
 
+random.seed(InputsConfig.seed)
 
 class Scheduler:
 

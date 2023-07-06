@@ -97,8 +97,8 @@ def main():
 
         if InputsConfig.model == 4:
             if InputsConfig.plot_chain:
-                for node in InputsConfig.NODES[0:3]:
-                    node.blockDAG.plot()
+                for node in InputsConfig.NODES:
+                    node.blockDAG.plot(node.id)
                     input("Press Enter to continue...")
         """
         # if InputsConfig.model == 3:
@@ -120,10 +120,10 @@ def main():
 
         # Node.reset_state()
         """
-        # ResultWriter.writeResult()
+        ResultWriter.writeResult()
         # ResultWriter.writeEvents(event_log, with_transactions=False)
 
-        ThesisStats.calculate_stats()
+        ThesisStats().calculate_stats()
 
         Statistics.reset()
         

@@ -2,6 +2,7 @@ import random
 
 from InputsConfig import InputsConfig as InputsConfig
 
+random.seed(InputsConfig.seed)
 
 class Network:
 

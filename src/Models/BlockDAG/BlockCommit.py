@@ -110,7 +110,7 @@ class BlockCommit(BaseBlockCommit):
 
             # We are behind, sync the state
             if (depth > node.blockDAG.get_depth()):
-                BlockCommit.update_local_blockchain(node, miner, depth, currentTime)
+                BlockCommit.update_local_blockchain(node, miner, currentTime)
                 # Start mining or working on the next block
                 BlockCommit.generate_next_block(node, currentTime)
 
@@ -125,6 +125,11 @@ class BlockCommit(BaseBlockCommit):
                 # TODO: Should this be done in block generation instead?
                 BlockCommit.update_transactionsPool(node, event.block, currentTime)
 
+                # # Add block to local blockDAG
+                # ret_add = node.blockDAG.add_block(event.block.id, event.block.previous, event.block.references, event.block)
+                # if not ret_add:
+                #     BlockCommit.update_local_blockchain(node, miner, currentTime)
+                    
         candidates = node.blockDAG.find_fork_candidates_id(event.block.depth + 1)
         blocks = [node.blockDAG.get_blockData_by_hash(id) for id in candidates]
         blocks += [event.block]
@@ -154,7 +159,7 @@ class BlockCommit(BaseBlockCommit):
                 Scheduler.receive_block_event(recipient, block, blockDelay)
 
     # Update local blockchain, if necessary, upon receiving a new valid block
-    def update_local_blockchain(node, miner, depth, currentTime):
+    def update_local_blockchain(node, miner, currentTime):
         """
         This function updates the local blockchain of the node upon receiving a new valid block
         :param node: the node that receives the new block
@@ -168,12 +173,8 @@ class BlockCommit(BaseBlockCommit):
         Example:
         node.blockchain = [1,2,3,4,5,6,7,8,9,10]
         len(blockchain) = 10
-        miner.blockchain = [1,2,3,4,5,6,7,8,9,10,11,12,13,14]
-        depth = 11 # I guess depth can be lower than the length of the miner's blockchain?
-        
+        miner.blockchain = [1,2,3,4,5,6,7,8,9,10,11,12,13,14]        
         node.blockchain = [1,2,3,4,5,6,7,8,9,10,11]
-
-        # TODO: Maybe extract deliver block into seperate function
         """
 
         # the node here is the one that needs to update its blockchain, while miner here is the one who owns the last block generated
@@ -186,8 +187,6 @@ class BlockCommit(BaseBlockCommit):
         if node.blockDAG.get_depth() < miner.blockDAG.get_depth(): # TODO: This is only heuristic, we need to check if the block is in the right order
             missing_blocks = BlockDAGraphComparison.get_differing_blocks(node.blockDAG, miner.blockDAG)
 
-            # TODO: A bit hacky, but it works also check:
-            # BlockDAGGraph.get_depth_of_block(block_id)
 
             # Order missing blocks by depth, otherwise we might try to add a block that references a block that hasn't been added yet
             missing_blocks = sorted(missing_blocks, key=lambda block: max(node.blockDAG.get_depth_of_block(block), miner.blockDAG.get_depth_of_block(block)))

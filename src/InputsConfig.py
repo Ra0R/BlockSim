@@ -11,7 +11,7 @@ class InputsConfig:
     3 : AppendableBlock model
     4 : BlockDAG model
     """
-
+    seed = 42
     model = 4
     plot_similarity = True
     plot_similarity_progress = False
@@ -52,9 +52,9 @@ class InputsConfig:
     ''' Input configurations for the BlockDAG model'''
     if model == 1 or model == 4:
         ''' Block Parameters '''
-        Binterval = 10  # Average time (in seconds)for creating a block in the blockchain
+        Binterval = 1  # Average time (in seconds)for creating a block in the blockchain
         Bsize = 1.0  # The block size in MB
-        Bdelay = 6 # average block propogation delay in seconds #https://bitcoin.stackexchange.com/questions/10821/how-long-does-it-take-to-propagate-a-newly-created-block-to-the-entire-bitcoin-n
+        Bdelay = 5 # average block propogation delay in seconds #https://bitcoin.stackexchange.com/questions/10821/how-long-does-it-take-to-propagate-a-newly-created-block-to-the-entire-bitcoin-n
 
         Breward = 12.5  # Reward for mining a block
 
@@ -98,7 +98,7 @@ class InputsConfig:
 
 
         ''' Simulation Parameters '''
-        simTime = 1500  # the simulation length (in seconds)
+        simTime = 500  # the simulation length (in seconds)
         Runs = 1  # Number of simulation runs
         
     ''' Input configurations for Ethereum model '''

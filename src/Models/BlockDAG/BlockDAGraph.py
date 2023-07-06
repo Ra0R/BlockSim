@@ -28,7 +28,11 @@ class BlockDAGraph:
         # Add the block
         depth = 0
         if parent != -1:
-            depth = self.graph[parent]["_depth"] + 1
+            if parent in self.graph:
+                depth = self.graph[parent]["_depth"] + 1
+            else:
+                # Parent of block being added is not in the graph -> Sync
+                return False # This means that the block is not added to the graph
         
         self.graph[block_hash] = {"parent": parent, "references": set(references), "block_data": block,  "_depth": depth}
         self.last_block = block_hash
@@ -50,6 +54,17 @@ class BlockDAGraph:
         graph_copy[block_hash] = {"parent": parent, "references": set(references), "block_data": block,  "_depth": 0}
         return graph_copy
 
+    def is_referenced(self, block_hash, graph=None):
+        """
+        Check if a block is referenced by any other block
+        """
+        if graph is None:
+            graph = self.graph
+            
+        for block in graph.values():
+            if block_hash in block["references"]:
+                return True
+        return False
 
     # def update_block(self, block_hash, references=[]):
     #     """
@@ -293,6 +308,8 @@ class BlockDAGraph:
         else: 
             # The block does not exist
             print("Block does not exist while checking if block is in chain of another block")
+            # return True
+
 
         # Check if block2 is in the chain of any of the references
         is_in_refernce = False
@@ -306,6 +323,8 @@ class BlockDAGraph:
         else:
             # The block does not exist
             print("Block does not exist while checking if block is in chain of another block")
+            # return True
+            
             
         return is_in_parent or is_in_refernce
     
