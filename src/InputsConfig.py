@@ -1,7 +1,4 @@
 
-from Models.BlockDAG.Node import Node
-
-
 class InputsConfig:
     RESULTS_PATH = "Results/"
     """ Seclect the model to be simulated.
@@ -13,11 +10,11 @@ class InputsConfig:
     """
     seed = 42
     model = 4
-    plot_similarity = True
+    plot_similarity = False
     plot_similarity_progress = False
-    plot_chain = True
+    plot_chain = False
     print_progress = True
-    plot_inclusion = False
+    plot_inclusion = True
     ''' Input configurations for the base model '''
     if model == 0:
 
@@ -52,7 +49,7 @@ class InputsConfig:
     ''' Input configurations for the BlockDAG model'''
     if model == 1 or model == 4:
         ''' Block Parameters '''
-        Binterval = 1  # Average time (in seconds)for creating a block in the blockchain
+        Binterval = 10  # Average time (in seconds)for creating a block in the blockchain
         Bsize = 1.0  # The block size in MB
         Bdelay = 5 # average block propogation delay in seconds #https://bitcoin.stackexchange.com/questions/10821/how-long-does-it-take-to-propagate-a-newly-created-block-to-the-entire-bitcoin-n
 
@@ -71,7 +68,7 @@ class InputsConfig:
         Tsize = 0.000546  # The average transaction size  in MB
 
         ''' Node Parameters '''
-        Nn = 3  # the total number of nodes in the network
+        Nn = 4  # the total number of nodes in the network
         NODES = []
         if model == 1:
             from Models.Bitcoin.Node import Node

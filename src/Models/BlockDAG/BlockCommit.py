@@ -41,8 +41,9 @@ class BlockCommit(BaseBlockCommit):
 
                 event.block.transactions = blockTrans
                 event.block.usedgas = blockSize
-
-            event.block.rx_timestamp = eventTime
+            # event.block_rx_timestamp[minerId] = eventTime
+            # event.block.rx_timestamp = eventTime
+            
             # Add immediately to local node's blockDAG
             miner.blockDAG.add_block(event.block.id, event.block.previous, event.block.references, event.block)
             
@@ -67,8 +68,8 @@ class BlockCommit(BaseBlockCommit):
         minerId = miner.id
         currentTime = event.time
         blockPrev = event.block.previous  # previous block id
-        # event.block.rx_timestamp = currentTime # TODO: <- Careful this will override block creation time for all nodes
         node: Node = InputsConfig.NODES[event.node]  # recipint
+        event.block.rx_timestamp[node.id] = currentTime # TODO: <- Careful this will override block creation time for all nodes
         lastBlockId = node.last_block()  # the id of last block
 
         if InputsConfig.print_progress:
@@ -87,7 +88,6 @@ class BlockCommit(BaseBlockCommit):
             BlockCommit.update_transactionsPool(node, event.block, currentTime)
 
             # remove block from forkedBlocks blockchain if it is there
-            # TODO: Also remove from mempool
             included_blocks = references + [event.block.id]
             # for included_block_id in included_blocks:
             #    BlockCommit.remove_included_block_from_forks(node, included_block_id)
@@ -117,12 +117,10 @@ class BlockCommit(BaseBlockCommit):
                 node.forkedBlockCandidates += [event.block]
 
             # Block arrives at the same depth as the current block
-            # TODO: Probably replace by checking blocks on the same level, which could be fork candidates
             elif (depth == node.blockDAG.get_depth()):
                 # Received block or current head may be forked
                 candidates = node.blockDAG.find_fork_candidates_id(depth)
 
-                # TODO: Should this be done in block generation instead?
                 BlockCommit.update_transactionsPool(node, event.block, currentTime)
 
                 # # Add block to local blockDAG
@@ -205,7 +203,6 @@ class BlockCommit(BaseBlockCommit):
 
             # TODO: Add transactions to the mempool pool that are included in forked block
 
-    # TODO: Move to node class
     def remove_included_block_from_forks(node, block_id):
         for block in node.forkedBlockCandidates:
             if block.id == block_id:
@@ -213,15 +210,13 @@ class BlockCommit(BaseBlockCommit):
                 node.forkedBlockCandidates.remove(block)
                 break
     
-    # TODO Check if in all calls also the forkedBlockCandidates should be updated
     def exclude_referenced_blocks_from_forkedBlocks_and_mempool(node, references, currentTime):
         for blockId in references:
             BlockCommit.remove_included_block_from_forks(node, blockId)
 
             # Remove transactions from the mempool pool that are included in the new block
             blockData = node.blockDAG.get_blockData_by_hash(blockId) 
-            # TODO: Not sure the block might not be in the blockDAG,
-            #  but the transactions might still be in the mempool
+
             if blockData is not None:
                 BlockCommit.update_transactionsPool(node, blockData, currentTime)
 

@@ -1,3 +1,4 @@
+from InputsConfig import InputsConfig
 from Models.Block import Block as BaseBlock
 
 
@@ -7,7 +8,7 @@ class Block(BaseBlock):
                  depth=0,
                  id=0,
                  timestamp=0,
-                 rx_timestamp=0,
+                 rx_timestamp=[0 for _ in range(InputsConfig.Nn)],
                  miner=None,
                  transactions=[],
                  size=1.0,

@@ -3,7 +3,7 @@ import os
 import pickle
 import unittest
 
-from Models.BlockDAG.BlockDAGraph import BlockDAGraph
+from blocksim.src.Models.BlockDAG.BlockDAGraph import BlockDAGraph
 
 
 class TestBlockDAG_RunResult(unittest.TestCase):

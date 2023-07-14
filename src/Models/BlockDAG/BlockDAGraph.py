@@ -137,13 +137,11 @@ class BlockDAGraph:
             node_label = str(block_number) 
             if data["block_data"] is not None:
                 node_label += "\n s_ts: " + str(data["block_data"].timestamp)  
-                node_label += "\n rx_ts: " + str(data["block_data"].rx_timestamp)
+                # node_label += "\n rx_ts: " + str(data["block_data"].rx_timestamp[node_id])
                 node_label += "\n miner:" + str(data["block_data"].miner)
+                node_label += "\n |T|:" + str(len(data["block_data"].transactions))
             
-            graph.node(str(block_number), node_label 
-                    #    + "\n |T|:" + str(len(data["block_data"].transactions))
-                       ,
-                        shape="box", fontname="Helvetica", color=color)
+            graph.node(str(block_number), node_label, shape="box", fontname="Helvetica", color=color)
             
             if parent == -1:
                 # Skip plotting
@@ -207,14 +205,15 @@ class BlockDAGraph:
             penwidth = str(inclusion_rate * 5)
             arrowhead = "none"
             if inclusion_time == 0:
-                color = "green"
+                color = "red"
             else:
-                color = "blue"
+                color = "green"
 
             if inclusion_time < 0:
-                color = "red"
+                color = "pink"
+            label = head_name +  "->" + tail_name
 
-            graph.edge(str(fork_id), str(block_id), color=color, penwidth=str(inclusion_rate * 5), arrowhead="none")
+            graph.edge(str(fork_id), str(block_id), color=color, penwidth=str(inclusion_rate * 5), arrowhead="none", label=label)
 
         # Genesis is at top
         graph.attr(rankdir='BT')
@@ -239,7 +238,7 @@ class BlockDAGraph:
         
         return self.graph[block_hash]["block_data"]
     
-    def get_ancestors(self, block_hash):
+    def get_descendants(self, block_hash):
         """ 
         Get all descendants of a block
         """
@@ -250,8 +249,8 @@ class BlockDAGraph:
 
         # Add all descendants of the children
         for child_hash, data in self.graph.items():
-            if data["parent"] == block_hash:
-                descendants = descendants.union(self.get_ancestors(child_hash))
+            if data["parent"] == block_hash or block_hash in data["references"]:
+                descendants = descendants.union(self.get_descendants(child_hash))
         
         return descendants
 

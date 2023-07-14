@@ -50,8 +50,9 @@ class Consensus(BaseConsensus):
             if block == None:
                 print("Block not found")
             else:
+                print("BLOCK FOUND" + str(block))
                 # Insert block into DAG
-                blockDAG.add_block(block_id, block["parent"], block["references"], block["block_data"])
+                blockDAG.add_block(block_id, block.previous, block.references, block)
 
         return blockDAG
 
