@@ -12,9 +12,9 @@ class InputsConfig:
     model = 4
     plot_similarity = False
     plot_similarity_progress = False
-    plot_chain = False
+    plot_chain = True
     print_progress = True
-    plot_inclusion = True
+    plot_inclusion = False
     ''' Input configurations for the base model '''
     if model == 0:
 
@@ -95,7 +95,7 @@ class InputsConfig:
 
 
         ''' Simulation Parameters '''
-        simTime = 500  # the simulation length (in seconds)
+        simTime = 1000  # the simulation length (in seconds)
         Runs = 1  # Number of simulation runs
         
     ''' Input configurations for Ethereum model '''

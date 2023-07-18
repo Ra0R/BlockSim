@@ -124,10 +124,12 @@ def main():
         Statistics.calculate()
 
     if InputsConfig.model == 4:
-        if InputsConfig.plot_chain:
             for node in InputsConfig.NODES:
-                node.blockDAG.plot(node.id)
-                input("Press Enter to continue...")
+                print("Main chain contains NO DUPLICATES:" + str(node.blockDAG.post_check_transaction_validity_main_chain()))
+
+                if InputsConfig.plot_chain:
+                    node.blockDAG.plot(node.id)
+                    input("Press Enter to continue...")
     """
     # if InputsConfig.model == 3:
     #     Statistics.print_to_excel(i, True)

@@ -218,8 +218,8 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
         # reference_inclusion_rate = 1/3
         # conflict inclusion rate is 2/3 (since transactions [8,9] are conflicting in blocks 2 and 3)
 
-        # conflict_time to inclusion for block 3s transactions is 0
-        # reference_time to inclusion for block 3s transactions is 1
+        # conflict_time to inclusion for block 3 transactions is 0
+        # reference_time to inclusion for block 3 transactions is 1
 
         inclusion_matrix = ThesisStats.calculate_transaction_time_to_inclusion(blockDAG)
         print(inclusion_matrix)
@@ -230,5 +230,5 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
         self.assertTrue(inclusion_rates["fork_id"][0] == 3)
         self.assertAlmostEqual(inclusion_rates["conflict_inclusion_rate"][0], 2/3)
         self.assertAlmostEqual(inclusion_rates["reference_inclusion_rate"][0] , 1/3)
-        self.assertTrue(inclusion_rates["time_to_inclusion_avg"][0] == 1/3)
+        self.assertTrue(inclusion_rates["time_to_inclusion_avg"][0] == 0)
         self.assertTrue(inclusion_rates["time_to_reference_avg"][0] == 1)

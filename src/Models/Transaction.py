@@ -155,6 +155,8 @@ class FullTransaction():
         # print("Transactions not eligible: ")
         # print(len(pool) - len([tx for tx in pool if tx.timestamp[1] <= currentTime]))
 
+        pool = [tx for tx in pool if not miner.blockDAG.contains_tx(tx.id)]
+
         for tx in pool:
             if blocksize <= 0:
                 break
@@ -168,8 +170,11 @@ class FullTransaction():
             # TODO
             True
 
-        if InputsConfig.model == 4 and InputsConfig.tx_consistency == True:
-            # Filter all transactions that are in the blockDAG already
-            transactions = [tx for tx in transactions if not miner.blockDAG.contains_tx(tx.id)]
-        
+        # if InputsConfig.model == 4 and InputsConfig.tx_consistency == True:
+        #     # Filter all transactions that are in the blockDAG already
+        #     print("Filtering transactions that are already in the blockDAG")
+        #     print("Transactions in pool: ", len(transactions))
+        #     transactions = [tx for tx in transactions if not miner.blockDAG.contains_tx(tx.id)]
+        #     print("Transactions in pool after filtering: ", len(transactions))
+
         return transactions, size

@@ -113,6 +113,28 @@ class BlockDAGraph:
     def __str__(self):
         return "[" + ", ".join([str(block_hash) for block_hash in self.graph.keys()]) + "]"
 
+    def post_check_transaction_validity_main_chain(self) -> bool:
+        """
+        Check if all transactions in the DAG are valid
+        """
+        main_chain = self.get_main_chain()
+        n_transactions = 0
+        transactions = set()
+
+        for block_hash in main_chain:
+            block = self.graph[block_hash]
+
+            n_transactions += len(block["block_data"].transactions)
+            transactions = transactions.union([tx.id for tx in block["block_data"].transactions])
+        
+        print("Number of transactions in main chain: ", n_transactions)
+        print("Number of unique transactions in main chain: ", len(transactions))
+
+        n_unique = len(transactions)
+
+        return n_transactions == n_unique
+        
+    
     def get_depth(self):
         return self.depth
 
