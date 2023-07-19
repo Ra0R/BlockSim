@@ -1,6 +1,7 @@
 
 
 import json
+from timeit import default_timer as timer
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -74,7 +75,7 @@ class ThesisStats:
 
         return (len(list_of_all_block_hashes) - len(main_chain_block_hashes)) / len(list_of_all_block_hashes)
 
-    def calculate_stats(self, save_to_file=True, blockDAG: BlockDAGraph = Consensus.get_global_blockDAG()):
+    def calculate_stats(self, save_to_file=True, blockDAG: BlockDAGraph = Consensus.get_global_blockDAG(), run=-1):
         model = InputsConfig.model
 
         if model == 1:
@@ -88,7 +89,7 @@ class ThesisStats:
 
         sim_matrix = ThesisStats.calculate_mempool_similarity_matrix()
 
-        transaction_troughput = ThesisStats.calculate_transaction_troughput()
+        transaction_troughput_sim, transaction_troughput_real = ThesisStats.calculate_transaction_troughput()
 
         inclusion_matrix = ThesisStats.calculate_transaction_time_to_inclusion()
         inclusion_rates = ThesisStats.calculate_inclusion_rates(inclusion_matrix)
@@ -105,9 +106,67 @@ class ThesisStats:
         print("Avg fork rate: ", round(
             avg_fork_rate * 100, 2), "% [fork/blocks in DAG]")
         print("Sim matrix: ", sim_matrix)
-        print("Transaction troughput: ", transaction_troughput, "[tx/s]")
+        print("Transaction troughput: (sim)", transaction_troughput_sim, "[tx/s]")
+        print("Transaction troughput: (real)", transaction_troughput_real, "[tx/s]")
         # print("Time to inclusion: ", inclusion_matrix)
         print("Inclusion rates: ", inclusion_rates)
+
+        # Save stats to file
+        ThesisStats.save_output_to_disk(run, transaction_troughput_real, transaction_troughput_sim, inclusion_rates, avg_fork_rate)
+
+    def save_output_to_disk(run, tps_real, tps_sim, inclusion_rates, fork_rate):
+        # Output has following format:
+        # {
+        #     params:
+        #         {
+        #         "const_node_count": 12
+        #         "const_bsize": 1.0,
+        #         "const_sim_time": 100 BLOCKS (?)
+
+        #         "block_per_second": 123,
+        #         "tx_delay": 123,
+        #         "block_delay": 123132,
+        #         "tx_per_second" : 10
+        #         },
+        #     results:
+        #         {
+
+        #             "tps": 123
+        #             "inclusion_rate" :
+        #             "inclusion_rate_per_fork" :
+        #         }
+        #     }
+
+        output = {
+            "params": {
+                "const_node_count": len(InputsConfig.NODES),
+                "const_bsize": InputsConfig.Bsize,
+                "const_sim_time": InputsConfig.simTime,
+                "block_per_second": InputsConfig.Binterval,
+                "block_delay": InputsConfig.Bdelay,
+                "tx_delay": InputsConfig.Tdelay,
+                "tx_per_second": InputsConfig.Tn,
+                "model": InputsConfig.model,
+            },
+            "results": {
+                "tps_real": tps_real,
+                "tps_sim": tps_sim,
+                "conflict_inclusion_rate_all": inclusion_rates["conflict_inclusion_rate"],
+                "conflict_time_to_inclusion_all": inclusion_rates["time_to_inclusion_avg"],
+                "reference_inclusion_rate_all": inclusion_rates["reference_inclusion_rate"],
+                "reference_time_to_inclusion_all": inclusion_rates["time_to_reference_avg"],
+                # "conflict_inclusion_rate_avg": sum(inclusion_rates["conflict_inclusion_rate"]) / len(inclusion_rates["conflict_inclusion_rate"]),
+                # "conflict_time_to_inclusion_avg": sum(inclusion_rates["time_to_inclusion_avg"]) / len(inclusion_rates["time_to_inclusion_avg"]),
+                # "reference_inclusion_rate_avg": sum(inclusion_rates["reference_inclusion_rate"]) / len(inclusion_rates["reference_inclusion_rate"]),
+                # "reference_time_to_inclusion_avg": sum(inclusion_rates["time_to_reference_avg"]) / len(inclusion_rates["time_to_reference_avg"]),
+                "fork_rate": fork_rate,
+                # "similarity_matrix": sim_matrix,
+            }
+        }
+
+        # Save stats to file
+        with open("output_param_" + str(run) + ".json", 'w') as fp:
+            json.dump(output, fp)
 
     def save_nodes_to_disk():
         model = InputsConfig.model
@@ -166,8 +225,7 @@ class ThesisStats:
                     inclusion_rate_per_block["fork_id"].append(fork_id)
                     inclusion_rate_per_block["block_id"].append(block_id)
                     inclusion_rate_per_block["inclusion_rate"].append(1)
-                    inclusion_rate_per_block["inclusion_time"].append(
-                        inclusion_time)
+                    inclusion_rate_per_block["inclusion_time"].append(inclusion_time)
                 else:
                     index = inclusion_rate_per_block["fork_id"].index(fork_id)
                     inclusion_rate_per_block["inclusion_rate"][index] += 1
@@ -179,14 +237,14 @@ class ThesisStats:
         print("Inclusion rate per block: ", inclusion_rate_per_block)
         return inclusion_rate_per_block
 
-    def calculate_inclusion_rates(inclusion_matrix, block_dag = Consensus.get_global_blockDAG()):
+    def calculate_inclusion_rates(inclusion_matrix, block_dag=Consensus.get_global_blockDAG()):
         inclusion_rates = {
             "fork_id": [],
             "conflict_inclusion_rate": [],
-                "reference_inclusion_rate": [],
-                "time_to_inclusion_avg": [],
-                "time_to_reference_avg": [],
-            }
+            "reference_inclusion_rate": [],
+            "time_to_inclusion_avg": [],
+            "time_to_reference_avg": [],
+        }
 
         fork_ids = block_dag.get_forks()
         for fork_id in fork_ids:
@@ -194,11 +252,11 @@ class ThesisStats:
 
             if fork is None:
                 print("Trying to get Fork with id: ", fork_id,
-                        " but it does not exist on any node")
+                      " but it does not exist on any node")
                 continue
 
             conflict_inclusion_rate = 0
-            inclusion_rate_later_time = 0
+            reference_inclusion_rate = 0
             avg_time_to_inclusion = 0
             time_to_reference_avg = 0
             time_to_reference_N = 0
@@ -220,27 +278,27 @@ class ThesisStats:
                             conflict_inclusion_rate += 1
                             avg_time_to_inclusion += inclusion_matrix["inclusion_time"][index]
                         if inclusion_matrix["reference_time"][index] != -99:
-                            inclusion_rate_later_time += 1
+                            reference_inclusion_rate += 1
                             time_to_reference_avg += inclusion_matrix["reference_time"][index]
                             time_to_reference_N += 1
                 else:
                     print("Transaction with id: ", transaction.id,
-                            " was not found in inclusion matrix (This shouldn't happen?)")
+                          " was not found in inclusion matrix (This shouldn't happen?)")
 
             if len(fork.transactions) == 0:
                 print("Fork with id: ", fork_id, " has no transactions")
             else:
                 conflict_inclusion_rate /= len(fork.transactions)
-                inclusion_rate_later_time /= len(fork.transactions)
+                reference_inclusion_rate /= len(fork.transactions)
                 avg_time_to_inclusion /= len(fork.transactions)
                 if time_to_reference_N == 0:
-                    time_to_reference_avg = -99
+                    time_to_reference_avg = None
                 else:
                     time_to_reference_avg /= time_to_reference_N
 
             inclusion_rates["fork_id"].append(fork_id)
             inclusion_rates["conflict_inclusion_rate"].append(conflict_inclusion_rate)
-            inclusion_rates["reference_inclusion_rate"].append(inclusion_rate_later_time)
+            inclusion_rates["reference_inclusion_rate"].append(reference_inclusion_rate)
             inclusion_rates["time_to_inclusion_avg"].append(avg_time_to_inclusion)
             inclusion_rates["time_to_reference_avg"].append(time_to_reference_avg)
 
@@ -272,11 +330,17 @@ class ThesisStats:
                         transaction_count += len(block_data.transactions)
 
         throughput = transaction_count / len(InputsConfig.NODES)
-        throughput /= simulation_time
 
-        return throughput
+        throughput_sim = throughput / simulation_time
+        throughput_real = throughput / timer()
+        return throughput_sim, throughput_real
 
     def calculate_transaction_time_to_inclusion(block_dag: BlockDAGraph = Consensus.get_global_blockDAG()):
+        """
+        If anybody wants to use this function, please read the following:
+        Don't do it
+        """
+
         if InputsConfig.model == 1:
             True
         if InputsConfig.model == 4:
@@ -286,92 +350,111 @@ class ThesisStats:
             # forks = block_dag.get_reachable_blocks() - set(block_dag.get_main_chain())
             forks = block_dag.get_forks()
 
-        transaction_inclusion_matrix = {
-            "transaction": [],
-            "included": [],
-            "inclusion_time": [],
-            "reference_time": [],
-            "fork_id": [],
-            "included_in_block": []
-        }
+            transaction_inclusion_matrix = {
+                "transaction": [],
+                "included": [],
+                "inclusion_time": [],
+                "reference_time": [],
+                "fork_id": [],
+                "included_in_block": []
+            }
 
-        for fork_id in forks:
-            fork = block_dag.get_blockData_by_hash(fork_id)
+            main_chain = block_dag.get_main_chain()
 
-            if fork is None:
-                # Sometimes fork is not on any node, so we skip it
-                continue
+            for fork_id in forks:
+                fork = block_dag.get_blockData_by_hash(fork_id)
 
-            previous_block = block_dag.get_blockData_by_hash(fork_id).previous
-            descandant_blocks = block_dag.get_descendants(previous_block)
+                if fork is None:
+                    # Sometimes fork is not on any node, so we skip it
+                    continue
 
-            descandant_blocks.discard(previous_block)
-            descandant_blocks.discard(fork_id)
+                previous_block = block_dag.get_blockData_by_hash(fork_id).previous
+                descandant_blocks = block_dag.get_descendants(previous_block)
 
-            transactions = block_dag.get_blockData_by_hash(fork_id).transactions
-            if descandant_blocks is None:
-                continue
+                descandant_blocks.discard(previous_block)
+                descandant_blocks.discard(fork_id)
 
-            for descendant_hash in descandant_blocks:
-                descendant = block_dag.get_blockData_by_hash(descendant_hash)
+                transactions = block_dag.get_blockData_by_hash(fork_id).transactions
 
-                if descendant is not None:
-                    height_difference = descendant.depth - fork.depth
-                    if height_difference < 0:
-                        print("Height difference is negative")
-                    else:
-                        # Check if the transactions are included in the descendant
-                        set1 = set([transaction.id for transaction in transactions])
-                        set2 = set([transaction.id for transaction in descendant.transactions])
-                        included_transaction_ids = set1.intersection(set2)
-                        included_transactions = [transaction for transaction in transactions
-                                                 if transaction.id in included_transaction_ids]
+                for descendant_hash in descandant_blocks:
+                    descendant = block_dag.get_blockData_by_hash(descendant_hash)
 
-                        if len(included_transactions) > 0:
-                            # Calculate height difference
-                            for transaction in included_transactions:
-                                transaction_inclusion_matrix["transaction"].append(transaction.id)
-                                transaction_inclusion_matrix["inclusion_time"].append(height_difference)
-                                transaction_inclusion_matrix["reference_time"].append(-99)
+                    if descendant is not None:
+                        height_difference = descendant.depth - fork.depth
+                        if height_difference < 0:
+                            print("Height difference is negative")
+                        else:
+                            # Check if the transactions are included in the descendant
+                            set1 = set([transaction.id for transaction in transactions])
+                            set2 = set([transaction.id for transaction in descendant.transactions])
+                            included_transaction_ids = set1.intersection(set2)
+                            included_transactions = [
+                                transaction for transaction in transactions
+                                if transaction.id in included_transaction_ids]
 
-                                # Initial fork id
-                                transaction_inclusion_matrix["fork_id"].append(fork_id)
-                                transaction_inclusion_matrix["included_in_block"].append(descendant_hash)
-                                transaction_inclusion_matrix["included"].append(True)
+                            if len(included_transactions) > 0:
+                                # Calculate height difference
+                                for transaction in included_transactions:
 
-                        elif descendant.references is not None and fork_id in descendant.references:
-                            # If the descendant references the fork, then the transaction is included
-                            for transaction in transactions:
-                                # Chekc if the transaction is already included
-                                if transaction.id not in transaction_inclusion_matrix["transaction"]:
-                                    transaction_inclusion_matrix["transaction"].append(transaction.id)
+                                    # Check if the transaction is included in the Block
+                                    if transaction.id not in transaction_inclusion_matrix["transaction"]:
+                                        transaction_inclusion_matrix["transaction"].append(transaction.id)
+                                        transaction_inclusion_matrix["inclusion_time"].append(height_difference)
+                                        transaction_inclusion_matrix["reference_time"].append(-99)
 
-                                    transaction_inclusion_matrix["inclusion_time"].append(-99)
-                                    transaction_inclusion_matrix["reference_time"].append(height_difference)
+                                        # Initial fork id
+                                        transaction_inclusion_matrix["fork_id"].append(fork_id)
+                                        transaction_inclusion_matrix["included_in_block"].append(descendant_hash)
+                                        transaction_inclusion_matrix["included"].append(True)
+                                    else:
+                                        index = transaction_inclusion_matrix["transaction"].index(transaction.id)
+                                        if transaction_inclusion_matrix["inclusion_time"][index] > height_difference or transaction_inclusion_matrix["reference_time"][index] > height_difference:
+                                            print("Updating tx (refrence)" + str(transaction.id) +
+                                                  " with height difference " + str(height_difference) + " and fork id " +
+                                                  str(fork_id) + " and included in block " + str(descendant_hash))
+                                            transaction_inclusion_matrix["reference_time"][index] = -99
+                                            transaction_inclusion_matrix["inclusion_time"][index] = height_difference
+                                            transaction_inclusion_matrix["included"][index] = True
+                                            transaction_inclusion_matrix["fork_id"][index] = fork_id
+                                            transaction_inclusion_matrix["included_in_block"][index] = descendant_hash
 
-                                    transaction_inclusion_matrix["included"].append(True)
-                                    transaction_inclusion_matrix["fork_id"].append(fork_id)
-                                    transaction_inclusion_matrix["included_in_block"].append(descendant_hash)
-                                else:
-                                    # Check if the transaction is included in a block with a lower height difference
-                                    index = transaction_inclusion_matrix["transaction"].index(transaction.id)
-                                    if transaction_inclusion_matrix["inclusion_time"][index] > height_difference:
-                                        transaction_inclusion_matrix["inclusion_time"][index] = height_difference
-                                        transaction_inclusion_matrix["included"][index] = True
-                                        transaction_inclusion_matrix["fork_id"][index] = fork_id
-                                        transaction_inclusion_matrix["included_in_block"][index] = descendant_hash
-                                        print(
-                                            "Transaction with id: ", transaction.id,
-                                            " is already included in the inclusion matrix but with a higher height difference")
-                                        # This happens when the block has been checked before
+                            # Otherwise check if the descendant references the fork
+                            if descendant.references is not None and descendant_hash in main_chain and fork_id in descendant.references:
+                                # If the descendant references the fork, then the transaction is included
+                                for transaction in transactions:
+                                    # Chekc if the transaction is already included
+                                    if transaction.id not in transaction_inclusion_matrix["transaction"]:
+                                        transaction_inclusion_matrix["transaction"].append(transaction.id)
 
-            # All transactions that are not included in the descendants are not included
-            for transaction in transactions:
-                if transaction.id not in transaction_inclusion_matrix["transaction"]:
-                    transaction_inclusion_matrix["transaction"].append(transaction.id)
-                    transaction_inclusion_matrix["inclusion_time"].append(-99)
-                    transaction_inclusion_matrix["reference_time"].append(-99)
-                    transaction_inclusion_matrix["included"].append(False)
-                    transaction_inclusion_matrix["fork_id"].append(-1)
-                    transaction_inclusion_matrix["included_in_block"].append(-1)
+                                        transaction_inclusion_matrix["inclusion_time"].append(-99)
+                                        transaction_inclusion_matrix["reference_time"].append(height_difference)
+
+                                        transaction_inclusion_matrix["included"].append(True)
+                                        transaction_inclusion_matrix["fork_id"].append(fork_id)
+                                        transaction_inclusion_matrix["included_in_block"].append(descendant_hash)
+                                    else:
+                                        # Check if the transaction is included in a block with a lower height difference
+                                        index = transaction_inclusion_matrix["transaction"].index(transaction.id)
+                                        if transaction_inclusion_matrix["inclusion_time"][index] > height_difference or transaction_inclusion_matrix["reference_time"][index] > height_difference:
+                                            print("Updating tx (refrence)" + str(transaction.id) +
+                                                  " with height difference " + str(height_difference) + " and fork id " +
+                                                  str(fork_id) + " and included in block " + str(descendant_hash))
+                                            transaction_inclusion_matrix["reference_time"][index] = height_difference
+                                            transaction_inclusion_matrix["inclusion_time"][index] = -99
+                                            transaction_inclusion_matrix["included"][index] = True
+                                            transaction_inclusion_matrix["fork_id"][index] = fork_id
+                                            transaction_inclusion_matrix["included_in_block"][index] = descendant_hash
+
+                                            # This happens when the block has been checked before
+
+                # All transactions that are not included in the descendants are not included
+                for transaction in transactions:
+                    if transaction.id not in transaction_inclusion_matrix["transaction"]:
+                        transaction_inclusion_matrix["transaction"].append(transaction.id)
+                        transaction_inclusion_matrix["inclusion_time"].append(-99)
+                        transaction_inclusion_matrix["reference_time"].append(-99)
+                        transaction_inclusion_matrix["included"].append(False)
+                        transaction_inclusion_matrix["fork_id"].append(-1)
+                        transaction_inclusion_matrix["included_in_block"].append(-1)
+
         return transaction_inclusion_matrix

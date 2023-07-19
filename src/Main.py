@@ -1,6 +1,7 @@
 import json
 import math
 import sys
+from timeit import default_timer as timer
 
 from Event import Event, Queue
 from InputsConfig import InputsConfig as InputsConfig
@@ -58,6 +59,7 @@ elif InputsConfig.model == 4:
 
 @profile
 def main():
+    start_t = timer()
     event_log = []
     arg_len = len(sys.argv)
     if arg_len > 1:
@@ -153,7 +155,7 @@ def main():
     ResultWriter.writeResult()
     # ResultWriter.writeEvents(event_log, with_transactions=False)
 
-    ThesisStats().calculate_stats()
+    ThesisStats().calculate_stats(run=sys.argv[1] if arg_len > 1 else -1)
 
     Statistics.reset()
         

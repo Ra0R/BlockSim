@@ -17,7 +17,7 @@ class Block(BaseBlock):
                  ):
 
         super().__init__(depth, id, previous, timestamp, miner, transactions, size)
-        self.references = []
+        self.references = references
         self.rx_timestamp = rx_timestamp
 
     def __str__(self) -> str:
