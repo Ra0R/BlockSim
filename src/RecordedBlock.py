@@ -2,7 +2,7 @@
 import json
 from typing import Optional
 
-from attr import dataclass
+from dataclasses import dataclass
 
 
 @dataclass
