@@ -71,8 +71,7 @@ def main():
         
         InputsConfig.Binterval = combination[0]
         InputsConfig.Tdelay = combination[1]
-        InputsConfig.Bdelay = combination[2]
-        # InputsConfig.Tn = combination[3] # TODO Set this to a multiple of block size
+        InputsConfig.Bdelay = combination[1] * 2 # Set as twice the tx delay
         InputsConfig.simTime = InputsConfig.Binterval * 100 # Generate a hundred blocks
 
         # We want to generate more transactions than those that fit in a block
