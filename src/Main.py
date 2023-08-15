@@ -68,10 +68,10 @@ def main():
         # Get the combination of parameters to be used in this simulation
         print("Running simulation combination id " + str(sys.argv[1]) + "/" + str(len(params.combinations)) + " (" + str(params.combinations[int(sys.argv[1])]) + ")")
         combination = params.get_combination(int(sys.argv[1]))
-        
+        block_delay_multiplier = combination[2]
         InputsConfig.Binterval = combination[0]
         InputsConfig.Tdelay = combination[1]
-        InputsConfig.Bdelay = combination[1] * 2 # Set as twice the tx delay
+        InputsConfig.Bdelay = combination[1] * block_delay_multiplier  # Set as twice the tx delay
         InputsConfig.simTime = InputsConfig.Binterval * 100 # Generate a hundred blocks
 
         # We want to generate more transactions than those that fit in a block
