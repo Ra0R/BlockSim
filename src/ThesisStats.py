@@ -142,7 +142,7 @@ class ThesisStats:
                 "const_node_count": len(InputsConfig.NODES),
                 "const_bsize": InputsConfig.Bsize,
                 "const_sim_time": InputsConfig.simTime,
-                "block_per_second": InputsConfig.Binterval,
+                "block_creation_interval": InputsConfig.Binterval,
                 "block_delay": InputsConfig.Bdelay,
                 "tx_delay": InputsConfig.Tdelay,
                 "tx_per_second": InputsConfig.Tn,
@@ -158,7 +158,7 @@ class ThesisStats:
                 "conflict_inclusion_rate_avg": sum(inclusion_rates["conflict_inclusion_rate"]) / len(inclusion_rates["conflict_inclusion_rate"]),
                 "conflict_time_to_inclusion_avg": sum(inclusion_rates["time_to_inclusion_avg"]) / len(inclusion_rates["time_to_inclusion_avg"]),
                 "reference_inclusion_rate_avg": sum(inclusion_rates["reference_inclusion_rate"]) / len(inclusion_rates["reference_inclusion_rate"]),
-                "reference_time_to_inclusion_avg": sum(inclusion_rates["time_to_reference_avg"]) / len(inclusion_rates["time_to_reference_avg"]),
+                "reference_time_to_inclusion_avg": sum([i for i in inclusion_rates["time_to_reference_avg"] if i is not None]) / len([i for i in inclusion_rates["time_to_reference_avg"] if i is not None]),
                 "fork_rate": fork_rate,
                 # "similarity_matrix": sim_matrix,
             }
