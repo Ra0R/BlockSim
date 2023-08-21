@@ -15,6 +15,9 @@ from ResultWriter import ResultWriter
 
 class ThesisStats:
 
+    START_T = 0
+    END_T = 0
+    WAITING_T = 0
     def jaccard_similarity(self, a, b):
         # calculate the Jaccard similarity coefficient
         set1 = set(a)
@@ -330,9 +333,15 @@ class ThesisStats:
                         transaction_count += len(block_data.transactions)
 
         throughput = transaction_count / len(InputsConfig.NODES)
-
+        real_time = ThesisStats.END_T - ThesisStats.START_T
+        real_time += ThesisStats.WAITING_T
+        # real_time = real_time / len(InputsConfig.NODES)
+        
+        print("Real time: ", real_time, " seconds")
+        print("Simulation time: ", simulation_time, " seconds")
         throughput_sim = throughput / simulation_time
-        throughput_real = throughput / timer()
+        throughput_real = throughput / real_time
+        
         return throughput_sim, throughput_real
 
     def calculate_transaction_time_to_inclusion(block_dag: BlockDAGraph = Consensus.get_global_blockDAG()):

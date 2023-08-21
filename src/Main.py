@@ -59,7 +59,6 @@ elif InputsConfig.model == 4:
 
 @profile
 def main():
-    start_t = timer()
     event_log = []
     arg_len = len(sys.argv)
     if arg_len > 1:
@@ -92,12 +91,14 @@ def main():
             LT.create_transactions()  # generate pending transactions
         elif InputsConfig.Ttechnique == "Full":
             FT.create_transactions()  # generate pending transactions
+    ThesisStats.START_T = timer()
 
     Node.generate_gensis_block()  # generate the gensis block for all miners
     # initiate initial events >= 1 to start with
     BlockCommit.generate_initial_events()
     while not Queue.isEmpty() and clock <= InputsConfig.simTime:
         next_event = Queue.get_next_event()
+        ThesisStats.WAITING_T += next_event.time - clock
         clock = next_event.time  # move clock to the time of the event
     
         if InputsConfig.plot_similarity_progress and len(event_log) % 45 == 0:
@@ -116,6 +117,9 @@ def main():
             Verification.perform_checks()
 
     Consensus.fork_resolution()  # apply the longest chain to resolve the forks
+
+    ThesisStats.END_T = timer()
+
     # distribute the rewards between the particiapting nodes
     if not InputsConfig.model == 4:
         Incentives.distribute_rewards()
