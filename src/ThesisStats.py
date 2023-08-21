@@ -139,6 +139,19 @@ class ThesisStats:
         #             "inclusion_rate_per_fork" :
         #         }
         #     }
+        if len(inclusion_rates["conflict_inclusion_rate"]) == 0:
+            conflict_inclusion_rate_avg = 0
+        else:
+            conflict_inclusion_rate_avg = sum( inclusion_rates["conflict_inclusion_rate"]) / len(inclusion_rates["conflict_inclusion_rate"]),
+        if len(inclusion_rates["time_to_inclusion_avg"]) == 0:
+            conflict_time_to_inclusion_avg = 0
+        else:
+            conflict_time_to_inclusion_avg = sum(inclusion_rates["time_to_inclusion_avg"]) / len(inclusion_rates["time_to_inclusion_avg"]),
+        
+        if len(inclusion_rates["reference_inclusion_rate"]) == 0:
+            reference_inclusion_rate_avg = 0
+        else:
+            reference_inclusion_rate_avg = sum(inclusion_rates["reference_inclusion_rate"]) / len(inclusion_rates["reference_inclusion_rate"]),
 
         output = {
             "params": {
@@ -158,9 +171,9 @@ class ThesisStats:
                 "conflict_time_to_inclusion_all": inclusion_rates["time_to_inclusion_avg"],
                 "reference_inclusion_rate_all": inclusion_rates["reference_inclusion_rate"],
                 "reference_time_to_inclusion_all": inclusion_rates["time_to_reference_avg"],
-                "conflict_inclusion_rate_avg": sum(inclusion_rates["conflict_inclusion_rate"]) / len(inclusion_rates["conflict_inclusion_rate"]),
-                "conflict_time_to_inclusion_avg": sum(inclusion_rates["time_to_inclusion_avg"]) / len(inclusion_rates["time_to_inclusion_avg"]),
-                "reference_inclusion_rate_avg": sum(inclusion_rates["reference_inclusion_rate"]) / len(inclusion_rates["reference_inclusion_rate"]),
+                "conflict_inclusion_rate_avg": conflict_inclusion_rate_avg,
+                "conflict_time_to_inclusion_avg": conflict_time_to_inclusion_avg,
+                "reference_inclusion_rate_avg": reference_inclusion_rate_avg,
                 "reference_time_to_inclusion_avg": sum([i for i in inclusion_rates["time_to_reference_avg"] if i is not None]) / len([i for i in inclusion_rates["time_to_reference_avg"] if i is not None]),
                 "fork_rate": fork_rate,
                 # "similarity_matrix": sim_matrix,

@@ -74,7 +74,7 @@ def main():
         InputsConfig.simTime = InputsConfig.Binterval * 100 # Generate a hundred blocks
 
         # We want to generate more transactions than those that fit in a block
-        InputsConfig.Tn = math.ceil((InputsConfig.Bsize / InputsConfig.Tsize) * InputsConfig.Binterval)
+        InputsConfig.Tn = math.ceil((InputsConfig.Bsize / InputsConfig.Tsize) * 1/InputsConfig.Binterval) * InputsConfig.Nn
         
         print("------------------------------------")
         print("Running simulation with parameters:")
