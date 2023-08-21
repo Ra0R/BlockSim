@@ -153,6 +153,13 @@ class ThesisStats:
         else:
             reference_inclusion_rate_avg = sum(inclusion_rates["reference_inclusion_rate"]) / len(inclusion_rates["reference_inclusion_rate"]),
 
+        if len(inclusion_rates["time_to_reference_avg"]) == 0:
+            reference_time_to_inclusion_avg = 0
+        else:
+            reference_time_to_inclusion_avg = sum([i for i in inclusion_rates["time_to_reference_avg"]
+                                                   if i is not None]) / len([i
+                                                                            for i in inclusion_rates["time_to_reference_avg"] if i is not None]),
+
         output = {
             "params": {
                 "const_node_count": len(InputsConfig.NODES),
@@ -174,7 +181,7 @@ class ThesisStats:
                 "conflict_inclusion_rate_avg": conflict_inclusion_rate_avg,
                 "conflict_time_to_inclusion_avg": conflict_time_to_inclusion_avg,
                 "reference_inclusion_rate_avg": reference_inclusion_rate_avg,
-                "reference_time_to_inclusion_avg": sum([i for i in inclusion_rates["time_to_reference_avg"] if i is not None]) / len([i for i in inclusion_rates["time_to_reference_avg"] if i is not None]),
+                "reference_time_to_inclusion_avg": reference_time_to_inclusion_avg,
                 "fork_rate": fork_rate,
                 # "similarity_matrix": sim_matrix,
             }
