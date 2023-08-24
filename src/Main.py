@@ -71,7 +71,7 @@ def main():
         InputsConfig.Binterval = combination[0]
         InputsConfig.Tdelay = combination[1]
         InputsConfig.Bdelay = combination[1] * block_delay_multiplier  # Set as twice the tx delay
-        InputsConfig.simTime = InputsConfig.Binterval * 200 # Generate a (two) hundred blocks
+        InputsConfig.simTime = InputsConfig.Binterval * 100 # Generate a (two) hundred blocks
 
         # We want to generate more transactions than those that fit in a block
         InputsConfig.Tn = math.ceil((InputsConfig.Bsize / InputsConfig.Tsize) * 1/InputsConfig.Binterval) * InputsConfig.Nn
