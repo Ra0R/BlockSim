@@ -128,7 +128,6 @@ class ResultWriter:
                 block_size = block.size,
                 transactions = [ResultWriter.transaction_to_recorded_transaction(transaction) for transaction in block.transactions]
             )
-    # TODO Move to consesus
     def get_mempools(beforetime=InputsConfig.simTime) -> list[MempoolOfNode]:
         mempools : list[MempoolOfNode] = []
         for node in InputsConfig.NODES:
