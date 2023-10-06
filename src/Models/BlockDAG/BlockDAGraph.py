@@ -66,17 +66,6 @@ class BlockDAGraph:
                 return True
         return False
 
-    # def update_block(self, block_hash, references=[]):
-    #     """
-    #     Update a block in the DAG
-    #     References is a list of abandoned blocks that this block references
-
-    #     This method is used when a miner creates a block and wants to update the references
-    #     TODO: Since blocks are not propagated to the miner itself
-    #     """
-    #     # Update the references
-    #     self.graph[block_hash]["references"] = set(references)
-
     def find_fork_candidates_id(self, depth):
         """
         Find a block on the same depth as the given block

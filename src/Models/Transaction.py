@@ -167,7 +167,6 @@ class FullTransaction():
                 size += tx.size
 
         if InputsConfig.model == 1:
-            # TODO
             True
 
         # if InputsConfig.model == 4 and InputsConfig.tx_consistency == True:

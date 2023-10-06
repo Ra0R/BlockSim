@@ -182,7 +182,7 @@ class BlockCommit(BaseBlockCommit):
         # This doesn't really work to sync a blockDAG to sync we need:
         # 1. check if the block is in the blockDAG
         # 2. if it is, check if it is in the right order
-        if node.blockDAG.get_depth() < miner.blockDAG.get_depth(): # TODO: This is only heuristic, we need to check if the block is in the right order
+        if node.blockDAG.get_depth() < miner.blockDAG.get_depth():
             missing_blocks = BlockDAGraphComparison.get_differing_blocks(node.blockDAG, miner.blockDAG)
 
 

@@ -16,7 +16,7 @@ class BlockDAGScheduler:
             # prepare attributes for the event
             block = Block()
             block.miner = miner.id
-            block.depth = miner.blockDAG.get_depth() #TODO: Is this correct? How is depth used
+            block.depth = miner.blockDAG.get_depth()
             block.id = random.randrange(100000000000) 
             block.previous = miner.last_block()
             block.timestamp = eventTime

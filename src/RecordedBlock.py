@@ -51,7 +51,6 @@ class RecordedBlock:
             block_hash=json["block_hash"],
             block_parent_hash=json["block_parent_hash"],
             block_timestamp=json["block_timestamp"],
-            # block_miner="none", # TODO this doesn't exist on listener, do we need it?
             transactions=transactions
         )
     
