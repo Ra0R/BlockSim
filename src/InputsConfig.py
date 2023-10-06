@@ -12,7 +12,7 @@ class InputsConfig:
     model = 4
     plot_similarity = False
     plot_similarity_progress = False
-    plot_chain = True
+    plot_chain = False
     print_progress = True
     plot_inclusion = False
 

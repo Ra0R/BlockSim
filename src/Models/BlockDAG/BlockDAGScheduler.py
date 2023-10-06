@@ -5,7 +5,7 @@ from InputsConfig import InputsConfig
 from Models.BlockDAG.Block import Block
 from Models.BlockDAG.Node import Node
 
-random.seed(InputsConfig.seed)
+# random.seed(InputsConfig.seed)
 
 class BlockDAGScheduler:
 
