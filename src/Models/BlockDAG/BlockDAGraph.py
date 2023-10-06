@@ -275,7 +275,17 @@ class BlockDAGraph:
                 descendants = descendants.union(self.get_descendants(child_hash))
         
         return descendants
-
+    
+    def get_references(self, block_hash):
+        """
+        Get all referenced blocks
+        """
+        # Check if the block exists
+        if not self.block_exists(block_hash):
+            print("WARNING: Block does not exist while getting references")
+            return set()
+        
+        return self.graph[block_hash]["references"]
 
     def block_exists(self, block_hash, graph = None):
         if graph is None:
@@ -378,42 +388,99 @@ class BlockDAGraph:
         return reachable_blocks
 
     def get_topological_ordering(self):
+        from queue import LifoQueue
         """
-        Depth first search to get topological ordering
-        Parent (main-chain) references are treated preferentially
+        Get the topological ordering of the DAG
+        The returned order goes from the last block to genesis:
+        [last_block, ..., -1]
         """
-        N = len(self.graph)
-        Visited = {block_hash: False for block_hash in self.graph.keys()}
-        Visited[-1] = True # Genesis block is always visited
-        
-        ordering = [None] * N
-        i = N - 1  # Index for ordering
+        main_chain = self.get_main_chain()
+        # last_block = main_chain[-1]
 
-        for(block_hash, _) in self.graph.items():
-            if not Visited[block_hash]:
-                i, ordering = self.topological_sort(block_hash, Visited, ordering, i)
+        # Start at the last block and go up the chain
+        topological_ordering = []
+        block_queue = LifoQueue()
+        for block in main_chain:
+            block_queue.put(block) # TODO maybe reverse
+        # print("Queue", block_queue.queue)
 
-        return ordering
+        current_block = block_queue.get()
+        while block_queue.qsize() > 0:
+            # print("Queue", block_queue.queue)
+            # print("Current block", current_block)
+            # Add references ordered by hash
+            references = self.get_references(current_block)
+            references_not_in_main_chain = references - set(main_chain) - set(topological_ordering)
+            # print("References not in main chain", references_not_in_main_chain)
+            if len(references_not_in_main_chain) > 0:
+                # Put the current block back in the queue
+                block_queue.put(current_block)
+
+                references_not_in_main_chain = sorted(references_not_in_main_chain)
+                # topological_ordering.extend(references_not_in_main_chain)
+                for reference in references_not_in_main_chain:
+                        block_queue.put(reference)
+
+
+                current_block = block_queue.get()
+            else:
+                topological_ordering.append(current_block)
+                # # Case 1: At the leaf of following a reference
+                # if self.graph[current_block]["parent"] in main_chain:
+                #     topological_ordering.append(current_block)
+                # # Case 2: At the leaf of following the parent 
+                # elif current_block in main_chain:
+                #     topological_ordering.append(current_block)
+
+                # print("Added", current_block)
+
+                current_block = block_queue.get()
+                
+        topological_ordering.append(current_block)
+        # Append genesis block
+        topological_ordering.append(-1)
+
+        return topological_ordering
+
+
     
-    def topological_sort(self, block_hash, Visited, ordering, i):
-        """
-        Topological sort helper function
-        """
-        Visited[block_hash] = True
+    # def get_topological_ordering(self):
+    #     """
+    #     Depth first search to get topological ordering
+    #     Parent (main-chain) references are treated preferentially
+    #     """
+    #     N = len(self.graph)
+    #     Visited = {block_hash: False for block_hash in self.graph.keys()}
+    #     Visited[-1] = True # Genesis block is always visited
+        
+    #     ordering = [None] * N
+    #     i = N - 1  # Index for ordering
 
-        # Recur for all the vertices adjacent to this vertex
-        for parent in [self.graph[block_hash]["parent"]]:
-            # If index exists in visited 
-            if parent in Visited and not Visited[parent]:
-                i, ordering = self.topological_sort(parent, Visited, ordering, i)
+    #     for(block_hash, _) in self.graph.items():
+    #         if not Visited[block_hash]:
+    #             i, ordering = self.topological_sort(block_hash, Visited, ordering, i)
 
-        for reference in self.graph[block_hash]["references"]:
-            if reference in Visited and not Visited[reference] :
-                i, ordering = self.topological_sort(reference, Visited, ordering, i)
+    #     return ordering
+    
+    # def topological_sort(self, block_hash, Visited, ordering, i):
+    #     """
+    #     Topological sort helper function
+    #     """
+    #     Visited[block_hash] = True
 
-        ordering[i] = block_hash
+    #     # Recur for all the vertices adjacent to this vertex
+    #     for parent in [self.graph[block_hash]["parent"]]:
+    #         # If index exists in visited 
+    #         if parent in Visited and not Visited[parent]:
+    #             i, ordering = self.topological_sort(parent, Visited, ordering, i)
 
-        return i - 1, ordering
+    #     for reference in self.graph[block_hash]["references"]:
+    #         if reference in Visited and not Visited[reference] :
+    #             i, ordering = self.topological_sort(reference, Visited, ordering, i)
+
+    #     ordering[i] = block_hash
+
+    #     return i - 1, ordering
     
     def contains_tx(self, transaction_id):
         """

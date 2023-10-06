@@ -12,9 +12,11 @@ class InputsConfig:
     model = 4
     plot_similarity = False
     plot_similarity_progress = False
-    plot_chain = False
+    plot_chain = True
     print_progress = True
     plot_inclusion = False
+
+    confirmation_depth = 6 # Number of blocks to wait for confirmation
     ''' Input configurations for the base model '''
     if model == 0:
 
@@ -51,7 +53,7 @@ class InputsConfig:
         ''' Block Parameters '''
         Binterval = 10  # Average time (in seconds)for creating a block in the blockchain
         Bsize = 1.0  # The block size in MB
-        Bdelay = 5 # average block propogation delay in seconds #https://bitcoin.stackexchange.com/questions/10821/how-long-does-it-take-to-propagate-a-newly-created-block-to-the-entire-bitcoin-n
+        Bdelay = 10 # average block propogation delay in seconds #https://bitcoin.stackexchange.com/questions/10821/how-long-does-it-take-to-propagate-a-newly-created-block-to-the-entire-bitcoin-n
 
         Breward = 12.5  # Reward for mining a block
 

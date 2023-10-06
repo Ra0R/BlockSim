@@ -2,6 +2,7 @@
 
 import json
 from timeit import default_timer as timer
+from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -24,6 +25,23 @@ class ThesisStats:
         set2 = set(b)
         jaccard_sim = len(set1.intersection(set2)) / len(set1.union(set2))
         return jaccard_sim
+    
+    @dataclass
+    class ForkStats:
+        id: int
+        conflict_inclusions: int
+        reference_inclusions: int
+        transactions: list
+        transaction_count: int
+
+        # toString without transactions
+        def __str__(self):
+            return "Fork: " + str(self.id) + "\n" + \
+                "  conflict_inclusions: " + str(self.conflict_inclusions) + "\n" + \
+                "  reference_inclusions: " + str(self.reference_inclusions) + "\n" + \
+                "  transaction_count: " + str(self.transaction_count) + "\n" + \
+                "  conflict_inclusion_rate:" + str(self.conflict_inclusions / self.transaction_count) + "\n" + \
+                "  reference_inclusion_rate:" + str(self.reference_inclusions / self.transaction_count) + "\n"
 
     def mempool_similarity_matrix(self, mempoolsOfNode: list[MempoolOfNode]) -> list[list[float]]:
         # calculate the similarity matrix for the mempools
@@ -78,46 +96,79 @@ class ThesisStats:
 
         return (len(list_of_all_block_hashes) - len(main_chain_block_hashes)) / len(list_of_all_block_hashes)
 
-    def calculate_stats(self, save_to_file=True, blockDAG: BlockDAGraph = Consensus.get_global_blockDAG(), run=-1):
-        model = InputsConfig.model
+    def calculate_stats(self, save_to_file=True, _blockDAG: BlockDAGraph = Consensus.get_global_blockDAG(), run=-1):
+        if InputsConfig.model != 4:
+            return
+        # TODO: Remove k-prefix from the chains and check if they are consistent!
 
-        if model == 1:
-            avg_fork_rate = ThesisStats.calculate_fork_rates_blockChain()
-
-        if model == 4:
-            blockDAGs = [node.blockDAG for node in InputsConfig.NODES]
-            avg_fork_rate = ThesisStats.calculate_fork_rates_blockDAG(blockDAGs)
-            if save_to_file:
-                ThesisStats.save_nodes_to_disk()
-
-        sim_matrix = ThesisStats.calculate_mempool_similarity_matrix()
-
-        transaction_troughput_sim, transaction_troughput_real = ThesisStats.calculate_transaction_troughput()
-
+        blockDAGs = [node.blockDAG for node in InputsConfig.NODES]
+        avg_fork_rate = ThesisStats.calculate_fork_rates_blockDAG(blockDAGs)
+        
+        list_of_all_block_hashes = _blockDAG.get_topological_ordering()
+        main_chain = _blockDAG.get_main_chain()
+        
+        # TODO - rewrite these two
+        # (!) Inclusion rates avg is wrong because it is not weighted by block
         inclusion_matrix = ThesisStats.calculate_transaction_time_to_inclusion()
         inclusion_rates = ThesisStats.calculate_inclusion_rates(inclusion_matrix)
+        
+        fork_stats = ThesisStats.calculate_fork_stats(main_chain, list_of_all_block_hashes)
 
-        if InputsConfig.plot_inclusion:
-            block_dag = Consensus.get_global_blockDAG()
-            plot_data__inclusion_rate_per_block = ThesisStats.calculate_inclusion_rate_per_block(inclusion_matrix)
-            block_dag.plot_with_inclusion_rate_per_block(plot_data__inclusion_rate_per_block)
-
-        # Save inclusion matrix to json file
-        with open('inclusion_matrix.json', 'w') as fp:
-            json.dump(inclusion_matrix, fp)
+        transaction_troughput_sim, transaction_troughput_real, throughput_real_optimal, throughput_real_bitcoin  = ThesisStats.calculate_transaction_troughput2(main_chain, fork_stats)
+        for fork_stat in fork_stats:
+            print(fork_stat)
 
         print("Avg fork rate: ", round(
             avg_fork_rate * 100, 2), "% [fork/blocks in DAG]")
-        print("Sim matrix: ", sim_matrix)
+        # print("Sim matrix: ", sim_matrix)
         print("Transaction troughput: (sim)", transaction_troughput_sim, "[tx/s]")
         print("Transaction troughput: (real)", transaction_troughput_real, "[tx/s]")
+        print("Transaction troughput: (real optimal)", throughput_real_optimal, "[tx/s]")
+        print("Transaction troughput: (real bitcoin)", throughput_real_bitcoin, "[tx/s]")
         # print("Time to inclusion: ", inclusion_matrix)
-        print("Inclusion rates: ", inclusion_rates)
+        # print("Inclusion rates: ", inclusion_rates)
+
+        ThesisStats.save_output_to_disk(run, transaction_troughput_real, transaction_troughput_sim, throughput_real_optimal, throughput_real_bitcoin, inclusion_rates, avg_fork_rate, fork_stats)
+
+    # def calculate_stats(self, save_to_file=True, blockDAG: BlockDAGraph = Consensus.get_global_blockDAG(), run=-1):
+        # model = InputsConfig.model
+
+        # if model == 1:
+        #     avg_fork_rate = ThesisStats.calculate_fork_rates_blockChain()
+
+        # if model == 4:
+        #     blockDAGs = [node.blockDAG for node in InputsConfig.NODES]
+        #     avg_fork_rate = ThesisStats.calculate_fork_rates_blockDAG(blockDAGs)
+        #     if save_to_file:
+        #         ThesisStats.save_nodes_to_disk()
+
+        # sim_matrix = ThesisStats.calculate_mempool_similarity_matrix()
+
+        # inclusion_matrix = ThesisStats.calculate_transaction_time_to_inclusion()
+        # inclusion_rates = ThesisStats.calculate_inclusion_rates(inclusion_matrix)
+
+        # transaction_troughput_sim, transaction_troughput_real = ThesisStats.calculate_transaction_troughput()
+        # if InputsConfig.plot_inclusion:
+        #     block_dag = Consensus.get_global_blockDAG()
+        #     plot_data__inclusion_rate_per_block = ThesisStats.calculate_inclusion_rate_per_block(inclusion_matrix)
+        #     block_dag.plot_with_inclusion_rate_per_block(plot_data__inclusion_rate_per_block)
+
+        # # Save inclusion matrix to json file
+        # with open('inclusion_matrix.json', 'w') as fp:
+        #     json.dump(inclusion_matrix, fp)
+
+        # print("Avg fork rate: ", round(
+        #     avg_fork_rate * 100, 2), "% [fork/blocks in DAG]")
+        # print("Sim matrix: ", sim_matrix)
+        # print("Transaction troughput: (sim)", transaction_troughput_sim, "[tx/s]")
+        # print("Transaction troughput: (real)", transaction_troughput_real, "[tx/s]")
+        # # print("Time to inclusion: ", inclusion_matrix)
+        # print("Inclusion rates: ", inclusion_rates)
 
         # Save stats to file
-        ThesisStats.save_output_to_disk(run, transaction_troughput_real, transaction_troughput_sim, inclusion_rates, avg_fork_rate)
+        #ThesisStats.save_output_to_disk(run, transaction_troughput_real, transaction_troughput_sim, inclusion_rates, avg_fork_rate)
 
-    def save_output_to_disk(run, tps_real, tps_sim, inclusion_rates, fork_rate):
+    def save_output_to_disk(run, tps_real, tps_sim, optimal_tps_real, bitcoin_tps_real , inclusion_rates, fork_rate, fork_stats: list[ForkStats]):
         # Output has following format:
         # {
         #     params:
@@ -139,26 +190,28 @@ class ThesisStats:
         #             "inclusion_rate_per_fork" :
         #         }
         #     }
-        if len(inclusion_rates["conflict_inclusion_rate"]) == 0:
+
+        if len(fork_stats) == 0:
             conflict_inclusion_rate_avg = 0
-        else:
-            conflict_inclusion_rate_avg = sum( inclusion_rates["conflict_inclusion_rate"]) / len(inclusion_rates["conflict_inclusion_rate"]),
-        if len(inclusion_rates["time_to_inclusion_avg"]) == 0:
-            conflict_time_to_inclusion_avg = 0
-        else:
-            conflict_time_to_inclusion_avg = sum(inclusion_rates["time_to_inclusion_avg"]) / len(inclusion_rates["time_to_inclusion_avg"]),
-        
-        if len(inclusion_rates["reference_inclusion_rate"]) == 0:
             reference_inclusion_rate_avg = 0
         else:
-            reference_inclusion_rate_avg = sum(inclusion_rates["reference_inclusion_rate"]) / len(inclusion_rates["reference_inclusion_rate"]),
+            conflict_inclusion_rate_avg = sum([i.conflict_inclusions for i in fork_stats]
+                                              ) / sum([i.transaction_count for i in fork_stats])
+            reference_inclusion_rate_avg = sum([i.reference_inclusions for i in fork_stats]
+                                               ) / sum([i.transaction_count for i in fork_stats])
 
+        # TODO: Fix this
         if len(inclusion_rates["time_to_reference_avg"]) == 0:
             reference_time_to_inclusion_avg = 0
         else:
             reference_time_to_inclusion_avg = sum([i for i in inclusion_rates["time_to_reference_avg"]
                                                    if i is not None]) / len([i
                                                                             for i in inclusion_rates["time_to_reference_avg"] if i is not None]),
+        if len(inclusion_rates["time_to_inclusion_avg"]) == 0:
+            conflict_time_to_inclusion_avg = 0
+        else:
+            conflict_time_to_inclusion_avg = sum(
+                inclusion_rates["time_to_inclusion_avg"]) / len(inclusion_rates["time_to_inclusion_avg"]),
 
         output = {
             "params": {
@@ -172,6 +225,8 @@ class ThesisStats:
                 "model": InputsConfig.model,
             },
             "results": {
+                "optimal_tps_real": optimal_tps_real,
+                "bitcoin_tps_real": bitcoin_tps_real,
                 "tps_real": tps_real,
                 "tps_sim": tps_sim,
                 "conflict_inclusion_rate_all": inclusion_rates["conflict_inclusion_rate"],
@@ -206,8 +261,7 @@ class ThesisStats:
         avg_fork_rate = 0
         for node in InputsConfig.NODES:
             main_chain = [block.id for block in Consensus.global_main_chain]
-            list_of_all_block_hashes = [
-                block.id for block in node.forkedBlocks]
+            list_of_all_block_hashes = [block.id for block in node.forkedBlocks]
             list_of_all_block_hashes += [block.id for block in node.blockchain]
             avg_fork_rate += ThesisStats.calculate_fork_rate(
                 list_of_all_block_hashes, main_chain)
@@ -219,7 +273,8 @@ class ThesisStats:
     def calculate_fork_rates_blockDAG(blockDAGs: list[BlockDAGraph]):
         avg_fork_rate = 0
         for blockDAG in blockDAGs:
-            list_of_all_block_hashes = blockDAG.to_list()
+            # list_of_all_block_hashes = blockDAG.to_list()
+            list_of_all_block_hashes = blockDAG.get_topological_ordering()
             main_chain = blockDAG.get_main_chain()
             avg_fork_rate = ThesisStats.calculate_fork_rate(
                 list_of_all_block_hashes, main_chain)
@@ -337,6 +392,91 @@ class ThesisStats:
 
         return sim_matrix
 
+    def predecessors_of_block(block_id, topological_order):
+        """
+        Returns the predecessors of a block in a topological order
+
+
+
+        Args:
+            block_id (_type_): _description_
+            topological_order (_type_): Is sorted from lastest to earliest delivery: [-1, 0x1, 0x123,0x453]
+        """
+        index = topological_order.index(block_id)
+        predecessors = topological_order[(index+1):]
+        print("Predecessors of block: ", block_id, " are: ", predecessors)
+        return predecessors
+
+
+    def calculate_fork_stats(main_chain, list_of_all_block_hashes):
+        forked_blocks = set(list_of_all_block_hashes) - set(main_chain)
+        # for node in InputsConfig.NODES:
+        fork_stats: list[ThesisStats.ForkStats] = []
+
+        for forked_block in forked_blocks:
+            conflict_inclusions = 0
+            reference_inclusions = 0
+            # Get all transactions
+            block_data = Consensus.get_global_blockDAG().get_blockData_by_hash(forked_block)
+
+            if block_data is None:
+                print("ERROR -- Block with hash: ", forked_block, " does not exist on any node")
+                continue
+            earlier_transactions = []
+            for predecessor in ThesisStats.predecessors_of_block(forked_block, list_of_all_block_hashes):
+                predecessor_block_data = Consensus.get_global_blockDAG().get_blockData_by_hash(predecessor)
+                if predecessor_block_data is None:
+                    print("ERROR -- Block with hash: ", predecessor, " does not exist on any node")
+                    continue
+                earlier_transactions += predecessor_block_data.transactions
+
+            earlier_ids = set([tx.id for tx in earlier_transactions])
+            for transaction in block_data.transactions:
+                # print("Transaction " + str(transaction.id) + " is in block " + str(forked_block) + " and was included in " + str(len(earlier_transactions)) + " earlier blocks")
+                if transaction.id in earlier_ids:
+                    conflict_inclusions += 1
+                else:
+                    reference_inclusions += 1
+
+            fork_stats.append(
+                ThesisStats.ForkStats(
+                    forked_block, conflict_inclusions, reference_inclusions, block_data.transactions,len(block_data.transactions)))
+            
+        return fork_stats
+        
+    def calculate_transaction_troughput2(main_chain, fork_stats):
+        tx_delivered = 0
+        tx_delivered_optimal = 0
+        tx_delivered_bitcoin = 0
+        # Calculate throughput
+        for fork_stat in fork_stats:
+            tx_delivered += fork_stat.reference_inclusions
+            tx_delivered_optimal += fork_stat.transaction_count
+            tx_delivered_bitcoin += 0 # Bitcoin forked blocks are not included in the main chain
+                
+        for mc_block in main_chain:
+            block_data = Consensus.get_global_blockDAG().get_blockData_by_hash(mc_block)
+            if block_data is None:
+                print("ERROR -- Block with hash: ", mc_block, " does not exist on any node")
+                continue
+            tx_delivered += len(block_data.transactions)
+            tx_delivered_optimal += len(block_data.transactions)
+            tx_delivered_bitcoin += len(block_data.transactions)
+
+        # Calculate throughput
+        simulation_time = InputsConfig.simTime
+        transaction_count = tx_delivered
+
+        throughput_sim = transaction_count / simulation_time
+        real_time = ThesisStats.END_T - ThesisStats.START_T
+        real_time += ThesisStats.WAITING_T
+
+        throughput_real = transaction_count / real_time
+        throughput_real_optimal = tx_delivered_optimal / real_time
+        throughput_real_bitcoin = tx_delivered_bitcoin / real_time
+
+        return throughput_sim, throughput_real, throughput_real_optimal, throughput_real_bitcoin
+            
     def calculate_transaction_troughput():
         simulation_time = InputsConfig.simTime
         transaction_count = 0
@@ -349,6 +489,7 @@ class ThesisStats:
                 # In this model all the blocks that are reachable from the last block are considered
                 for block_id in node.blockDAG.get_reachable_blocks():
                     block_data = node.blockDAG.get_blockData_by_hash(block_id)
+                    # This is wrong
                     if block_data is not None:
                         transaction_count += len(block_data.transactions)
 

@@ -96,7 +96,7 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
         blockDAG = self.get_test_graph()
         topological_sort = blockDAG.get_topological_ordering()
         topological_sort.reverse()
-        self.assertEqual(topological_sort, [0, 1, 2, 3, 4])
+        self.assertEqual(topological_sort, [-1, 0, 1, 2, 4, 3])
 
     def test_is_in_chain_of_block(self):
         blockDAG = self.get_test_graph()
@@ -156,7 +156,7 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
 
         blockDAG.add_block(7, 3, [])
         # blockDAG.add_block(6, 4, [3,7])
-        self.assertTrue(blockDAG.is_in_chain_of_block(6, 3))
+        self.assertFalse(blockDAG.is_in_chain_of_block(6, 3))
         # This is wrong because the previous refence is not in the chain of the new block
         # We should simulate this by adding a block that is not in the chain of the new block
         self.assertTrue(blockDAG.is_in_chain_of_block(7, 3))

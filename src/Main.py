@@ -132,6 +132,10 @@ def main():
             for node in InputsConfig.NODES:
                 print("Main chain contains NO DUPLICATES:" + str(node.blockDAG.post_check_transaction_validity_main_chain()))
 
+            # Check if all nodes have the same main chain
+            for node in InputsConfig.NODES:
+
+                print("Topological ordering: " + str(node.blockDAG.get_topological_ordering()))
                 if InputsConfig.plot_chain:
                     node.blockDAG.plot(node.id)
                     input("Press Enter to continue...")

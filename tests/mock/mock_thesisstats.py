@@ -1,4 +1,7 @@
 
+from dataclasses import dataclass
+
+
 class ThesisStats:
     def calculate_transaction_time_to_inclusion(block_dag):
         # node = InputsConfig.NODES[0]
@@ -163,3 +166,91 @@ class ThesisStats:
             inclusion_rates["time_to_reference_avg"].append(time_to_reference_avg)
 
         return inclusion_rates
+    @dataclass
+    class ForkStats:
+        id: int
+        conflict_inclusions: int
+        reference_inclusions: int
+        transactions: list
+        transaction_count: int
+
+        # toString without transactions
+        def __str__(self):
+            return "Fork: " + str(self.id) + "\n" + \
+                "  conflict_inclusions: " + str(self.conflict_inclusions) + "\n" + \
+                "  reference_inclusions: " + str(self.reference_inclusions) + "\n" + \
+                "  transaction_count: " + str(self.transaction_count) + "\n"
+    def predecessors_of_block(block_id, topological_order):
+        """
+        Returns the predecessors of a block in a topological order
+
+
+
+        Args:
+            block_id (_type_): _description_
+            topological_order (_type_): Is sorted from lastest to earliest delivery: [-1, 0x1, 0x123,0x453]
+        """
+        index = topological_order.index(block_id)
+        predecessors = topological_order[(index + 1):]
+        print("Predecessors of block: ", block_id, " are: ", predecessors)
+
+        return predecessors
+        
+    def calculate_transaction_troughput2(blockdag, main_chain, list_of_all_block_hashes, simTime):
+        
+        forked_blocks = set(list_of_all_block_hashes) - set(main_chain)
+        # Need to order from earliest to latest
+        # forked_blocks = sorted(forked_blocks, key=lambda x: x.timestamp)
+        # for node in InputsConfig.NODES:
+        fork_stats : list[ThesisStats.ForkStats] = []
+
+        for forked_block in forked_blocks:
+            conflict_inclusions = 0
+            reference_inclusions = 0
+            # Get all transactions
+            block_data = blockdag.get_blockData_by_hash(forked_block)
+
+            if block_data is None:
+                print("ERROR -- Block with hash: ", forked_block, " does not exist on any node")
+                continue
+            earlier_transactions = []
+            for predecessor in ThesisStats.predecessors_of_block(forked_block, list_of_all_block_hashes):
+                predecessor_block_data = blockdag.get_blockData_by_hash(predecessor)
+                if predecessor_block_data is None:
+                    print("ERROR -- Block with hash: ", predecessor, " does not exist on any node")
+                    continue
+                earlier_transactions += predecessor_block_data.transactions
+
+            for transaction in block_data.transactions:
+                print("Transaction" + str(transaction.id) + " is in block " + str(forked_block) + " and was included in " + str(len(earlier_transactions)) + " earlier blocks")
+                print("Earlier transactions: ", [x.id for x in earlier_transactions])
+                if transaction.id in [tx.id for tx in earlier_transactions]:
+                    conflict_inclusions += 1
+                else:
+                    reference_inclusions += 1
+
+            fork_stats.append(ThesisStats.ForkStats(forked_block, conflict_inclusions, reference_inclusions, block_data.transactions, len(block_data.transactions)))
+        for fork_stat in fork_stats:
+            print(fork_stat)
+
+        tx_delivered = 0
+        # Calculate throughput
+        for fork_stat in fork_stats:
+            tx_delivered += fork_stat.reference_inclusions
+                
+        for mc_block in main_chain:
+            block_data = blockdag.get_blockData_by_hash(mc_block)
+            if block_data is None:
+                print("ERROR -- Block with hash: ", mc_block, " does not exist on any node")
+                continue
+            tx_delivered += len(block_data.transactions)
+
+        # Calculate throughput
+        simulation_time = simTime
+        transaction_count = tx_delivered
+        throughput_sim = transaction_count / simulation_time
+        real_time = simTime
+
+        throughput_real = transaction_count / real_time
+
+        return throughput_sim, throughput_real

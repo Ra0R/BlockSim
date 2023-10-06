@@ -40,7 +40,7 @@ class Consensus(BaseConsensus):
             block = blockDAG.get_blockData_by_hash(block_id)
             
             if block != None:
-                break
+                continue
 
             if block == None:
                 for node in InputsConfig.NODES:
@@ -48,9 +48,10 @@ class Consensus(BaseConsensus):
                         block = node.blockDAG.get_blockData_by_hash(block_id)
             
             if block == None:
-                print("Block not found")
+                # print("Block not found")
+                continue
             else:
-                print("BLOCK FOUND" + str(block))
+                # print("BLOCK FOUND" + str(block))
                 # Insert block into DAG
                 blockDAG.add_block(block_id, block.previous, block.references, block)
 
