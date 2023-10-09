@@ -114,7 +114,8 @@ class ThesisStats:
         
         fork_stats = ThesisStats.calculate_fork_stats(main_chain, list_of_all_block_hashes)
 
-        transaction_troughput_sim, transaction_troughput_real, throughput_real_optimal, throughput_real_bitcoin  = ThesisStats.calculate_transaction_troughput2(main_chain, fork_stats)
+        transaction_troughput_sim, transaction_troughput_real, throughput_real_optimal, throughput_real_bitcoin, throughput_sim_optimal, throughput_sim_bitcoin \
+        = ThesisStats.calculate_transaction_troughput2(main_chain, fork_stats)
         for fork_stat in fork_stats:
             print(fork_stat)
 
@@ -128,7 +129,7 @@ class ThesisStats:
         # print("Time to inclusion: ", inclusion_matrix)
         # print("Inclusion rates: ", inclusion_rates)
 
-        ThesisStats.save_output_to_disk(run, transaction_troughput_real, transaction_troughput_sim, throughput_real_optimal, throughput_real_bitcoin, inclusion_rates, avg_fork_rate, fork_stats)
+        ThesisStats.save_output_to_disk(run, transaction_troughput_real, transaction_troughput_sim, throughput_real_optimal, throughput_sim_optimal, throughput_real_bitcoin, throughput_sim_bitcoin, inclusion_rates, avg_fork_rate, fork_stats)
 
     # def calculate_stats(self, save_to_file=True, blockDAG: BlockDAGraph = Consensus.get_global_blockDAG(), run=-1):
         # model = InputsConfig.model
@@ -168,7 +169,7 @@ class ThesisStats:
         # Save stats to file
         #ThesisStats.save_output_to_disk(run, transaction_troughput_real, transaction_troughput_sim, inclusion_rates, avg_fork_rate)
 
-    def save_output_to_disk(run, tps_real, tps_sim, optimal_tps_real, bitcoin_tps_real , inclusion_rates, fork_rate, fork_stats: list[ForkStats]):
+    def save_output_to_disk(run, tps_real, tps_sim, optimal_tps_real, optimal_tps_sim, bitcoin_tps_real, bitcoin_tps_sim, inclusion_rates, fork_rate, fork_stats: list[ForkStats]):
         # Output has following format:
         # {
         #     params:
@@ -229,6 +230,8 @@ class ThesisStats:
                 "bitcoin_tps_real": bitcoin_tps_real,
                 "tps_real": tps_real,
                 "tps_sim": tps_sim,
+                "optimal_tps_sim": optimal_tps_sim,
+                "bitcoin_tps_sim": bitcoin_tps_sim,
                 "conflict_inclusion_rate_all": inclusion_rates["conflict_inclusion_rate"],
                 "conflict_time_to_inclusion_all": inclusion_rates["time_to_inclusion_avg"],
                 "reference_inclusion_rate_all": inclusion_rates["reference_inclusion_rate"],
@@ -474,8 +477,10 @@ class ThesisStats:
         throughput_real = transaction_count / real_time
         throughput_real_optimal = tx_delivered_optimal / real_time
         throughput_real_bitcoin = tx_delivered_bitcoin / real_time
+        throughput_sim_optimal = tx_delivered_optimal / simulation_time
+        throughput_sim_bitcoin = tx_delivered_bitcoin / simulation_time
 
-        return throughput_sim, throughput_real, throughput_real_optimal, throughput_real_bitcoin
+        return throughput_sim, throughput_real, throughput_real_optimal, throughput_real_bitcoin, throughput_sim_optimal  , throughput_sim_bitcoin
             
     def calculate_transaction_troughput():
         simulation_time = InputsConfig.simTime

@@ -13,9 +13,6 @@ class ParameterSpace:
     def __init__(self):
         pass
 
-    def get_combination(self):
-        return self.combinations.pop()
-
     def get_combination(self, index) :
         # return combination and append block delay
         return self.combinations[index]

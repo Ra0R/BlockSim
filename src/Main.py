@@ -98,7 +98,7 @@ def main():
     BlockCommit.generate_initial_events()
     while not Queue.isEmpty() and clock <= InputsConfig.simTime:
         next_event = Queue.get_next_event()
-        ThesisStats.WAITING_T += next_event.time - clock
+        ThesisStats.WAITING_T += next_event.time - clock #TODO: Does this make sense?
         clock = next_event.time  # move clock to the time of the event
     
         if InputsConfig.plot_similarity_progress and len(event_log) % 45 == 0:
