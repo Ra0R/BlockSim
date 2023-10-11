@@ -9,13 +9,13 @@ class InputsConfig:
     4 : BlockDAG model
     """
     seed = 42
+    seed_creation = True
     model = 4
     plot_similarity = False
     plot_similarity_progress = False
     plot_chain = False
     print_progress = True
     plot_inclusion = False
-
     confirmation_depth = 6 # Number of blocks to wait for confirmation
     ''' Input configurations for the base model '''
     if model == 0:
@@ -80,10 +80,10 @@ class InputsConfig:
         # NODES = [Node(id=i, hashPower=100) for i in range(0, 100)]
         # here as an example we define three nodes by assigning a unique id for each one + % of hash (computing) power
         NODES = [
-            Node(id=0, hashPower=50), 
-            Node(id=1, hashPower=20), 
-            Node(id=2, hashPower=40),
-            Node(id=3, hashPower=30),
+            Node(id=0, hashPower=25), 
+            Node(id=1, hashPower=25), 
+            Node(id=2, hashPower=25),
+            Node(id=3, hashPower=25),
             # Node(id=4, hashPower=20),
             # Node(id=5, hashPower=10),
             # Node(id=6, hashPower=10),

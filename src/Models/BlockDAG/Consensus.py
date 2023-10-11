@@ -3,10 +3,10 @@ import random
 import numpy as np
 from InputsConfig import InputsConfig as InputsConfig
 
-# random.seed(InputsConfig.seed)
-
 from Models.Consensus import Consensus as BaseConsensus
 
+if InputsConfig.seed_creation:
+    random.seed(InputsConfig.seed)
 
 class Consensus(BaseConsensus):
     """
