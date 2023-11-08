@@ -1,3 +1,4 @@
+import graphviz as gv
 import pickle
 
 # from bloom_filter import BloomFilter
@@ -130,41 +131,54 @@ class BlockDAGraph:
     def get_last_block(self):
         return self.last_block
     
-    def plot(self, node_id = 0):
+    def plot(self, node_id=0):
         import graphviz as gv
 
         graph = gv.Digraph(format='png')
-        # Graph Title is node 
+        # Graph Title is node
         graph.node("Title", "Block DAG of Node" + str(node_id), shape="box", fontname="Helvetica")
+
         # Graph previous as full edges and references as dashed edges
         for block_number, data in self.graph.items():
             parent = data["parent"]
             references = data["references"]
-            color = "black"
+
             # Mark main chain
-            if block_number in self.get_main_chain() != 0:
-                color = "red"
+            color = "#f6797e"  # Red color
+            style  = ",dashed"
+            border_color =  "#545454"
+            if block_number in self.get_main_chain():
+                color = "#265f95"  # Default blue color
+                style = ""
+                border_color = color
+
             # Add the block
-            node_label = str(block_number) 
+            node_label = "h: " + str(block_number)
             if data["block_data"] is not None:
-                node_label += "\n s_ts: " + str(data["block_data"].timestamp)  
-                # node_label += "\n rx_ts: " + str(data["block_data"].rx_timestamp[node_id])
                 node_label += "\n miner:" + str(data["block_data"].miner)
                 node_label += "\n |T|:" + str(len(data["block_data"].transactions))
-            
-            graph.node(str(block_number), node_label, shape="box", fontname="Helvetica", color=color)
-            
+
+            graph.node(
+                str(block_number),
+                node_label, shape="box", fontname="Helvetica", color=border_color, style="filled,rounded" + style, fillcolor=color,
+                # Style dashed 
+                # as thicker and black
+                penwidth="4",
+                bgcolor="color", fontcolor="white")  # Set peripheries to 2 for rounded borders
+
             if parent == -1:
                 # Skip plotting
-                graph.edge(str(block_number), str(parent), style="solid")
-                graph.node(str("-1"), "Genesis", shape="box", fontname="Helvetica")
+                graph.edge(str(block_number), str(parent), style="solid", color="#545454")
+                graph.node(str("-1"), "Genesis", shape="box", fontname="Helvetica", fontcolor="white",
+                           fillcolor=color,
+                           style="filled,rounded" + style, bgcolor="#265f95")  # Red background for Genesis
             else:
                 # Add the parent
-                graph.edge(str(block_number), str(parent), style="solid")
+                graph.edge(str(block_number), str(parent), style="solid", color="#545454")
 
             # Add the references
             for reference in references:
-                    graph.edge(str(block_number), str(reference), style="dashed")
+                graph.edge(str(block_number), str(reference), style="dashed", color="#545454")
 
         # Genesis is at top
         graph.attr(rankdir='BT')
@@ -390,19 +404,17 @@ class BlockDAGraph:
         topological_ordering = []
         block_queue = LifoQueue()
         for block in main_chain:
-            block_queue.put(block) # TODO maybe reverse
-        # print("Queue", block_queue.queue)
+            block_queue.put(block)
 
         current_block = block_queue.get()
+
         while block_queue.qsize() > 0:
-            # print("Queue", block_queue.queue)
-            # print("Current block", current_block)
             # Add references ordered by hash
             references = self.get_references(current_block)
             references_not_in_main_chain = references - set(main_chain) - set(topological_ordering)
-            # print("References not in main chain", references_not_in_main_chain)
             if len(references_not_in_main_chain) > 0:
                 # Put the current block back in the queue
+                topological_ordering.append(current_block)
                 block_queue.put(current_block)
 
                 references_not_in_main_chain = sorted(references_not_in_main_chain)
@@ -410,66 +422,18 @@ class BlockDAGraph:
                 for reference in references_not_in_main_chain:
                         block_queue.put(reference)
 
-
                 current_block = block_queue.get()
             else:
-                topological_ordering.append(current_block)
-                # # Case 1: At the leaf of following a reference
-                # if self.graph[current_block]["parent"] in main_chain:
-                #     topological_ordering.append(current_block)
-                # # Case 2: At the leaf of following the parent 
-                # elif current_block in main_chain:
-                #     topological_ordering.append(current_block)
+                 if(current_block not in topological_ordering):
+                    topological_ordering.append(current_block)
 
-                # print("Added", current_block)
-
-                current_block = block_queue.get()
+                 current_block = block_queue.get()
                 
         topological_ordering.append(current_block)
         # Append genesis block
         topological_ordering.append(-1)
 
         return topological_ordering
-
-
-    
-    # def get_topological_ordering(self):
-    #     """
-    #     Depth first search to get topological ordering
-    #     Parent (main-chain) references are treated preferentially
-    #     """
-    #     N = len(self.graph)
-    #     Visited = {block_hash: False for block_hash in self.graph.keys()}
-    #     Visited[-1] = True # Genesis block is always visited
-        
-    #     ordering = [None] * N
-    #     i = N - 1  # Index for ordering
-
-    #     for(block_hash, _) in self.graph.items():
-    #         if not Visited[block_hash]:
-    #             i, ordering = self.topological_sort(block_hash, Visited, ordering, i)
-
-    #     return ordering
-    
-    # def topological_sort(self, block_hash, Visited, ordering, i):
-    #     """
-    #     Topological sort helper function
-    #     """
-    #     Visited[block_hash] = True
-
-    #     # Recur for all the vertices adjacent to this vertex
-    #     for parent in [self.graph[block_hash]["parent"]]:
-    #         # If index exists in visited 
-    #         if parent in Visited and not Visited[parent]:
-    #             i, ordering = self.topological_sort(parent, Visited, ordering, i)
-
-    #     for reference in self.graph[block_hash]["references"]:
-    #         if reference in Visited and not Visited[reference] :
-    #             i, ordering = self.topological_sort(reference, Visited, ordering, i)
-
-    #     ordering[i] = block_hash
-
-    #     return i - 1, ordering
     
     def contains_tx(self, transaction_id):
         """
