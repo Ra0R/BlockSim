@@ -1,6 +1,7 @@
 
 
 import json
+import math
 from timeit import default_timer as timer
 from dataclasses import dataclass
 
@@ -23,7 +24,14 @@ class ThesisStats:
         # calculate the Jaccard similarity coefficient
         set1 = set(a)
         set2 = set(b)
-        jaccard_sim = len(set1.intersection(set2)) / len(set1.union(set2))
+        try:
+            jaccard_sim = len(set1.intersection(set2)) / len(set1.union(set2))
+        except ZeroDivisionError:
+            if len(set1) == 0 and len(set2) == 0:
+                jaccard_sim = 1
+            else:
+                jaccard_sim = 0
+        
         return jaccard_sim
     
     @dataclass
@@ -61,7 +69,7 @@ class ThesisStats:
 
         return similarity_matrix
 
-    def plot_mempool_similarity_matrix(self, mempool_similarity_matrix: list[list[float]] = None):
+    def plot_mempool_similarity_matrix(self, mempool_similarity_matrix: list[list[float]] = None, time=InputsConfig.simTime):
         import numpy as np
 
         sns.set_theme(style="white")
@@ -74,9 +82,9 @@ class ThesisStats:
 
         f, ax = plt.subplots(figsize=(11, 9))
 
-        cmap = sns.diverging_palette(230, 20, as_cmap=True)
+        cmap = sns.cubehelix_palette(as_cmap=True)
         # Add name of plot
-        plt.title("Mempool similarity matrix")
+        plt.title("Mempool similarity matrix at simulation time " + str(math.floor(time)) +"s of " + str(InputsConfig.simTime) + "s")
 
         sns.heatmap(mempool_similarity_matrix, mask=mask, cmap=cmap, vmin=0,
                     vmax=1, center=0.5,
@@ -88,7 +96,7 @@ class ThesisStats:
         # plt.draw()
         # plt.pause(0.01)
 
-        return plt
+        return plt, f
 
     def calculate_fork_rate(list_of_all_block_hashes, main_chain_block_hashes):
         if len(list_of_all_block_hashes) == 0:
@@ -390,8 +398,8 @@ class ThesisStats:
         sim_matrix = ThesisStats().mempool_similarity_matrix(
             ResultWriter.get_mempools(time))
         if InputsConfig.plot_similarity or plot:
-            plt = ThesisStats().plot_mempool_similarity_matrix(sim_matrix)
-            plt.show(block=True)
+            plt, f = ThesisStats().plot_mempool_similarity_matrix(sim_matrix, time)
+            plt.show()
 
         return sim_matrix
 
