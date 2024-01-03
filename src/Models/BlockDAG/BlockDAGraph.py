@@ -130,6 +130,9 @@ class BlockDAGraph:
         """
         if block_hash == -1 or block_hash is None:
             return None
+
+        if block_hash not in self.graph:
+            return None
         
         return self.graph[block_hash]["parent"]
     
@@ -421,7 +424,7 @@ class BlockDAGraph:
             references = self.get_references(current_block).copy()
             # Get references that block deems main chain
             parent = self.get_parent(current_block)
-            
+
             if parent != -1 and parent is not None:
                 references.add(self.get_parent(current_block))
 
