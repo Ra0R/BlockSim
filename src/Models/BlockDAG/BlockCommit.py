@@ -41,8 +41,6 @@ class BlockCommit(BaseBlockCommit):
 
                 event.block.transactions = blockTrans
                 event.block.usedgas = blockSize
-            # event.block_rx_timestamp[minerId] = eventTime
-            # event.block.rx_timestamp = eventTime
             
             # Add immediately to local node's blockDAG
             miner.blockDAG.add_block(event.block.id, event.block.previous, event.block.references, event.block)
@@ -69,7 +67,7 @@ class BlockCommit(BaseBlockCommit):
         currentTime = event.time
         blockPrev = event.block.previous  # previous block id
         node: Node = InputsConfig.NODES[event.node]  # recipint
-        event.block.rx_timestamp[node.id] = currentTime # TODO: <- Careful this will override block creation time for all nodes
+        event.block.rx_timestamp[node.id] = currentTime # <- Careful this will override block creation time for all nodes
         lastBlockId = node.last_block()  # the id of last block
 
         if InputsConfig.print_progress:
@@ -89,18 +87,11 @@ class BlockCommit(BaseBlockCommit):
 
             # remove block from forkedBlocks blockchain if it is there
             included_blocks = references + [event.block.id]
-            # for included_block_id in included_blocks:
-            #    BlockCommit.remove_included_block_from_forks(node, included_block_id)
-            # Start mining or working on the next block
+
 
             BlockCommit.exclude_referenced_blocks_from_forkedBlocks_and_mempool(node, included_blocks, currentTime)
-
-
+            # Start mining or working on the next block
             BlockCommit.generate_next_block(node, currentTime)
-
-            # Add block to fork candidates if it is not already there
-            
-            # node.forkedBlockCandidates += [event.block]
 
          # > case 2: the received block is  not built on top of the last block --> either we need to sync the state of the chain to that block
          # or it is a forked block if we are already passed that
@@ -200,8 +191,6 @@ class BlockCommit(BaseBlockCommit):
                 BlockCommit.exclude_referenced_blocks_from_forkedBlocks_and_mempool(node, references, currentTime)
 
                 node.blockDAG.add_block(block_id, block_data.previous, references, block_data)
-
-            # TODO: Add transactions to the mempool pool that are included in forked block
 
     def remove_included_block_from_forks(node, block_id):
         for block in node.forkedBlockCandidates:

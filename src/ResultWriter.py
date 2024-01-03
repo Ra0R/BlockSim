@@ -12,7 +12,7 @@ ONLY_TRANSACTION_IDS = True
 
 class ResultWriter:
     ############
-    # TODO: Add the following to the result file:
+    # The result writer will write the following files:
     # - A file per node with the following information:
     #   - The node's mempool
     #   - The node's chain
@@ -30,13 +30,7 @@ class ResultWriter:
 
         # forks =  ResultWriter.get_forked_blocks(blocks, ResultWriter.get_all_blocks())
         forks = ResultWriter.get_forked_blocks()
-        # print("Forks: ")
-        #print(forks)
         ResultWriter.write_forks(forks, with_transactions=WITH_TRANSACTION)
-
-        # mempools = ResultWriter.get_mempools()
-        # for mempool in mempools:
-        #     ResultWriter.write_mempool(mempool)
 
     def writeEvents(events, with_transactions=False):
         if not with_transactions:
