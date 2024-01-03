@@ -12,8 +12,7 @@ class InputsConfig:
     seed_creation = True
     model = 4
     plot_similarity = False
-    plot_similarity_progress = False
-    plot_chain = False
+    plot_chain = True
     print_progress = True
     plot_inclusion = False
     confirmation_depth = 6 # Number of blocks to wait for confirmation
@@ -97,7 +96,7 @@ class InputsConfig:
 
 
         ''' Simulation Parameters '''
-        simTime = 1000  # the simulation length (in seconds)
+        simTime = 100  # the simulation length (in seconds)
         Runs = 1  # Number of simulation runs
         
     ''' Input configurations for Ethereum model '''

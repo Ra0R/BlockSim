@@ -96,7 +96,30 @@ class TestBlockDAG_DataStructure(unittest.TestCase):
         blockDAG = self.get_test_graph()
         topological_sort = blockDAG.get_topological_ordering()
         topological_sort.reverse()
-        self.assertEqual(topological_sort, [-1, 0, 1, 2, 4, 3])
+        self.assertEqual(topological_sort, [-1, 0, 1, 2, 3, 4])
+
+
+    def test_get_toplogical_sort_2(self):
+        # Ascii Graph:
+        #  0
+        #  | \
+        #  1  5
+        # /  /
+        # 2 3
+        # \ :
+        #   4
+        blockDAG = BlockDAGraph()
+
+        blockDAG.add_block(0, -1, [])
+        blockDAG.add_block(1, 0, [])
+        blockDAG.add_block(5,0, [])
+        blockDAG.add_block(3,5 , [])
+        blockDAG.add_block(2, 1, [])
+        blockDAG.add_block(4, 2, [3])
+
+        topological_sort = blockDAG.get_topological_ordering()
+        topological_sort.reverse()
+        self.assertEqual(topological_sort, [-1, 0, 1, 2, 5,3, 4])
 
     def test_is_in_chain_of_block(self):
         blockDAG = self.get_test_graph()

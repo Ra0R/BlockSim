@@ -36,9 +36,9 @@ class Scheduler:
     # Schedule a block receiving event for a node and add it to the event list
     def receive_block_event(recipient, block, blockDelay):
         receive_block_time = block.timestamp + blockDelay
-        if receive_block_time <= InputsConfig.simTime:
-            e = Event("receive_block", recipient.id, receive_block_time, block)
-            Queue.add_event(e)
+        # if receive_block_time <= InputsConfig.simTime:
+        e = Event("receive_block", recipient.id, receive_block_time, block)
+        Queue.add_event(e)
 
     # Schedule a block creation event for a gateway - AppendableBlock model
     def create_block_event_AB(node, eventTime, receiverGatewayId):

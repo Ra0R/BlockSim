@@ -287,7 +287,7 @@ class ThesisStats:
             # list_of_all_block_hashes = blockDAG.to_list()
             list_of_all_block_hashes = blockDAG.get_topological_ordering()
             main_chain = blockDAG.get_main_chain()
-            avg_fork_rate = ThesisStats.calculate_fork_rate(
+            avg_fork_rate += ThesisStats.calculate_fork_rate(
                 list_of_all_block_hashes, main_chain)
         avg_fork_rate /= len(blockDAGs)
 

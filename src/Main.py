@@ -98,16 +98,26 @@ def main():
     BlockCommit.generate_initial_events()
     while not Queue.isEmpty() and clock <= InputsConfig.simTime:
         next_event = Queue.get_next_event()
-        ThesisStats.WAITING_T += next_event.time - clock #TODO: Does this make sense?
+        ThesisStats.WAITING_T += next_event.time - clock
         clock = next_event.time  # move clock to the time of the event
     
-        if InputsConfig.plot_similarity_progress and len(event_log) % 45 == 0:
+        if InputsConfig.plot_similarity and len(event_log) % 45 == 0:
             ThesisStats.calculate_mempool_similarity_matrix(True, clock)
         
         BlockCommit.handle_event(next_event)
         event_log.append(next_event)
         Queue.remove_event(next_event)
 
+    while not Queue.isEmpty():
+        next_event = Queue.get_next_event()
+        # Simulate receive block event
+        if next_event.type == "receive_block":
+            BlockCommit.handle_event(next_event)
+            event_log.append(next_event)
+            Queue.remove_event(next_event)
+        else:
+            Queue.remove_event(next_event)
+            
     # for the AppendableBlock process transactions and
     # optionally verify the model implementation
     if InputsConfig.model == 3:

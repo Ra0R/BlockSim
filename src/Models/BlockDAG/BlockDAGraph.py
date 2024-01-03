@@ -123,7 +123,15 @@ class BlockDAGraph:
         n_unique = len(transactions)
 
         return n_transactions == n_unique
+    
+    def get_parent(self, block_hash):
+        """
+        Get the parent of a block
+        """
+        if block_hash == -1 or block_hash is None:
+            return None
         
+        return self.graph[block_hash]["parent"]
     
     def get_depth(self):
         return self.depth
@@ -410,7 +418,13 @@ class BlockDAGraph:
 
         while block_queue.qsize() > 0:
             # Add references ordered by hash
-            references = self.get_references(current_block)
+            references = self.get_references(current_block).copy()
+            # Get references that block deems main chain
+            parent = self.get_parent(current_block)
+            
+            if parent != -1 and parent is not None:
+                references.add(self.get_parent(current_block))
+
             references_not_in_main_chain = references - set(main_chain) - set(topological_ordering)
             if len(references_not_in_main_chain) > 0:
                 # Put the current block back in the queue

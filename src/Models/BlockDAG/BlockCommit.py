@@ -58,8 +58,8 @@ class BlockCommit(BaseBlockCommit):
             BlockCommit.propagate_block(event.block)
             # Start mining or working on the next block
             BlockCommit.generate_next_block(miner, eventTime)
-        else:
-            print("Block " + str(event.block.id) + " is not built on top of the last block " + str(blockPrev) + " of node " + str(minerId) + " at time " + str(eventTime) + " but on top of " + str(miner.last_block()))
+        #else:
+        #    print("Block " + str(event.block.id) + " is not built on top of the last block " + str(blockPrev) + " of node " + str(minerId) + " at time " + str(eventTime) + " but on top of " + str(miner.last_block()))
 
     # Block Receiving Event
     def receive_block(event):
